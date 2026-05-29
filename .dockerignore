@@ -1,0 +1,44 @@
+# Keep the analytics build context small. The container bind-mounts the
+# repo at /workspace at run time, so the build itself only needs the
+# analytics_code package metadata and source.
+.venv/
+**/.venv/
+venv/
+**/venv/
+env/
+**/env/
+
+# Generated outputs, logs, caches
+**/outputs/
+**/__pycache__/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/.ipynb_checkpoints/
+**/htmlcov/
+**/.coverage*
+**/*.pyc
+**/*.pyo
+
+# Git, VCS, IDE
+.git/
+.gitignore
+.github/
+.vscode/
+.idea/
+
+# Large client artefacts not needed at build time (the entrypoint
+# bind-mounts the repo so these are still available at run time).
+python_client/data/
+python_client/outputs/
+gradio_api/offload/
+archive/
+
+# Local environment files
+.env
+**/.env
+**/.env.*
+
+# OS noise
+.DS_Store
+Thumbs.db

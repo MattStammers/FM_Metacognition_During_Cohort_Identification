@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+.git/
+.gitignore
+logs/
+.venv/
+venv/
+.cache/
+.pytest_cache/
+.ipynb_checkpoints/
+README.source.md

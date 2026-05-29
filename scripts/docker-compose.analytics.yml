@@ -1,0 +1,32 @@
+# Containerised analytics runner. From the repo root:
+#
+#   docker compose -f scripts/docker-compose.analytics.yml run --rm analytics
+#
+# This mounts the repo at /workspace and runs both the patient-level
+# and document-level analytics passes against the bundled dummy
+# config. Outputs land in analytics_code/outputs/ on the host.
+#
+# To use a custom config:
+#
+#   docker compose -f scripts/docker-compose.analytics.yml run --rm \
+#       -e ANALYTICS_CONFIG=/workspace/path/to/your_config.json analytics
+#
+# To run a single stage (e.g. full_performance only):
+#
+#   docker compose -f scripts/docker-compose.analytics.yml run --rm analytics \
+#       run-stage --stage full_performance \
+#       --config /workspace/analytics_code/configs/all_models_dummy_analysis.json
+
+services:
+  analytics:
+    build:
+      context: ..
+      dockerfile: scripts/Dockerfile.analytics
+    image: llm-metacognition-analytics:latest
+    working_dir: /workspace
+    environment:
+      MPLBACKEND: Agg
+      PYTHONUNBUFFERED: "1"
+      ANALYTICS_CONFIG: ${ANALYTICS_CONFIG:-/workspace/analytics_code/configs/all_models_dummy_analysis.json}
+    volumes:
+      - ..:/workspace:rw

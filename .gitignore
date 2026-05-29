@@ -1,0 +1,24 @@
+.venv/
+venv/
+
+# Local environment secrets
+.env
+**/.env
+**/.env.*
+!**/.env.example
+.vscode/
+
+# Runtime outputs
+**/logs/
+**/outputs/
+
+# Python cache
+**/__pycache__/
+**/.pytest_cache/
+**/*.pyc
+
+# Hugging Face and model cache artifacts
+**/.cache/
+gradio_api/hf_cache/
+archive/
+real_data/

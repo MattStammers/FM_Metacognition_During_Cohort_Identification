@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "analytics-code"
+version = "0.1.0"
+description = "Five-stage analysis pipeline for the LLM metacognition study"
+authors = ["Open Source Release"]
+readme = "README.md"
+license = "GPL-2.0-only"
+packages = [{ include = "analytics_code", from = "src" }]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+pandas = "^2.2.3"
+numpy = "^2.2.0"
+matplotlib = "^3.10.0"
+scikit-learn = "^1.6.0"
+scipy = "^1.15.0"
+openpyxl = "^3.1.5"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.4"
+ipykernel = "^6.29.5"
+
+[tool.poetry.scripts]
+analytics-code = "analytics_code.cli:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

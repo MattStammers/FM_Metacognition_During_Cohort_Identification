@@ -1,0 +1,216 @@
+services:
+  mixtral:
+    build:
+      context: .
+    image: gradio-api:latest
+    profiles: ["mixtral"]
+    command: ["python", "src/mixtral_7b_t075.py"]
+    environment:
+      HF_ACCESS_TOKEN: ${HF_ACCESS_TOKEN}
+      GRADIO_SERVER_NAME: 0.0.0.0
+      GRADIO_SERVER_PORT: 9001
+      GRADIO_DEBUG: ${GRADIO_DEBUG:-false}
+      LOGS_DIR: ${LOGS_DIR:-/app/logs}
+      MAX_MEMORY_PER_GPU: ${MAX_MEMORY_PER_GPU:-40GB}
+      NVIDIA_VISIBLE_DEVICES: ${MIXTRAL_VISIBLE_GPUS:-0,1,2,3}
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+    ports:
+      - "${MIXTRAL_HOST_BIND_IP:-127.0.0.1}:9001:9001"
+    volumes:
+      - ./logs:/app/logs
+      - ./offload:/app/offload
+      - ./hf_cache:/app/.cache/huggingface
+    gpus: all
+    restart: unless-stopped
+
+  m42:
+    build:
+      context: .
+    image: gradio-api:latest
+    profiles: ["m42"]
+    command: ["python", "src/m42_8b_t075.py"]
+    environment:
+      HF_ACCESS_TOKEN: ${HF_ACCESS_TOKEN}
+      GRADIO_SERVER_NAME: 0.0.0.0
+      GRADIO_SERVER_PORT: 9002
+      GRADIO_DEBUG: ${GRADIO_DEBUG:-false}
+      LOGS_DIR: ${LOGS_DIR:-/app/logs}
+      MAX_MEMORY_PER_GPU: ${MAX_MEMORY_PER_GPU:-40GB}
+      NVIDIA_VISIBLE_DEVICES: ${M42_VISIBLE_GPUS:-0,1,2,3}
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+    ports:
+      - "${M42_HOST_BIND_IP:-127.0.0.1}:9002:9002"
+    volumes:
+      - ./logs:/app/logs
+      - ./offload:/app/offload
+      - ./hf_cache:/app/.cache/huggingface
+    gpus: all
+    restart: unless-stopped
+
+  deepseek14:
+    build:
+      context: .
+    image: gradio-api:latest
+    profiles: ["deepseek14"]
+    command: ["python", "src/deepseek_14b_t075.py"]
+    environment:
+      HF_ACCESS_TOKEN: ${HF_ACCESS_TOKEN}
+      GRADIO_SERVER_NAME: 0.0.0.0
+      GRADIO_SERVER_PORT: 9003
+      GRADIO_DEBUG: ${GRADIO_DEBUG:-false}
+      LOGS_DIR: ${LOGS_DIR:-/app/logs}
+      MAX_MEMORY_PER_GPU: ${MAX_MEMORY_PER_GPU:-40GB}
+      NVIDIA_VISIBLE_DEVICES: ${DEEPSEEK14_VISIBLE_GPUS:-0,1,2,3}
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+    ports:
+      - "${DEEPSEEK14_HOST_BIND_IP:-127.0.0.1}:9003:9003"
+    volumes:
+      - ./logs:/app/logs
+      - ./offload:/app/offload
+      - ./hf_cache:/app/.cache/huggingface
+    gpus: all
+    restart: unless-stopped
+
+  deepseek32:
+    build:
+      context: .
+    image: gradio-api:latest
+    profiles: ["deepseek32"]
+    command: ["python", "src/deepseek_32b_t060.py"]
+    environment:
+      HF_ACCESS_TOKEN: ${HF_ACCESS_TOKEN}
+      GRADIO_SERVER_NAME: 0.0.0.0
+      GRADIO_SERVER_PORT: 9004
+      GRADIO_DEBUG: ${GRADIO_DEBUG:-false}
+      LOGS_DIR: ${LOGS_DIR:-/app/logs}
+      MAX_MEMORY_PER_GPU: ${MAX_MEMORY_PER_GPU:-40GB}
+      NVIDIA_VISIBLE_DEVICES: ${DEEPSEEK32_VISIBLE_GPUS:-0,1,2,3}
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+    ports:
+      - "${DEEPSEEK32_HOST_BIND_IP:-127.0.0.1}:9004:9004"
+    volumes:
+      - ./logs:/app/logs
+      - ./offload:/app/offload
+      - ./hf_cache:/app/.cache/huggingface
+    gpus: all
+    restart: unless-stopped
+
+  qwen32:
+    build:
+      context: .
+    image: gradio-api:latest
+    profiles: ["qwen32"]
+    command: ["python", "src/qwen_32b_t060.py"]
+    environment:
+      HF_ACCESS_TOKEN: ${HF_ACCESS_TOKEN}
+      GRADIO_SERVER_NAME: 0.0.0.0
+      GRADIO_SERVER_PORT: 9005
+      GRADIO_DEBUG: ${GRADIO_DEBUG:-false}
+      LOGS_DIR: ${LOGS_DIR:-/app/logs}
+      MAX_MEMORY_PER_GPU: ${MAX_MEMORY_PER_GPU:-40GB}
+      NVIDIA_VISIBLE_DEVICES: ${QWEN32_VISIBLE_GPUS:-0,1,2,3}
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+    ports:
+      - "${QWEN32_HOST_BIND_IP:-127.0.0.1}:9005:9005"
+    volumes:
+      - ./logs:/app/logs
+      - ./offload:/app/offload
+      - ./hf_cache:/app/.cache/huggingface
+    gpus: all
+    restart: unless-stopped
+
+  gemma4_31b:
+    build:
+      context: .
+    image: gradio-api:latest
+    profiles: ["gemma4_31b"]
+    command: ["python", "src/gemma_4_31b_t060.py"]
+    environment:
+      HF_ACCESS_TOKEN: ${HF_ACCESS_TOKEN}
+      GRADIO_SERVER_NAME: 0.0.0.0
+      GRADIO_SERVER_PORT: 9006
+      GRADIO_DEBUG: ${GRADIO_DEBUG:-false}
+      LOGS_DIR: ${LOGS_DIR:-/app/logs}
+      MAX_MEMORY_PER_GPU: ${MAX_MEMORY_PER_GPU:-40GB}
+      NVIDIA_VISIBLE_DEVICES: ${GEMMA4_31B_VISIBLE_GPUS:-0,1,2,3}
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+    ports:
+      - "${GEMMA4_31B_HOST_BIND_IP:-127.0.0.1}:9006:9006"
+    volumes:
+      - ./logs:/app/logs
+      - ./offload:/app/offload
+      - ./hf_cache:/app/.cache/huggingface
+    gpus: all
+    restart: unless-stopped
+
+  deepseek14_t05:
+    build:
+      context: .
+    image: gradio-api:latest
+    profiles: ["deepseek14_t05"]
+    command: ["python", "src/deepseek_14b_t050.py"]
+    environment:
+      HF_ACCESS_TOKEN: ${HF_ACCESS_TOKEN}
+      GRADIO_SERVER_NAME: 0.0.0.0
+      GRADIO_SERVER_PORT: 9013
+      GRADIO_DEBUG: ${GRADIO_DEBUG:-false}
+      LOGS_DIR: ${LOGS_DIR:-/app/logs}
+      MAX_MEMORY_PER_GPU: ${MAX_MEMORY_PER_GPU:-40GB}
+      NVIDIA_VISIBLE_DEVICES: ${DEEPSEEK14_T05_VISIBLE_GPUS:-0,1,2,3}
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+    ports:
+      - "${DEEPSEEK14_T05_HOST_BIND_IP:-127.0.0.1}:9013:9013"
+    volumes:
+      - ./logs:/app/logs
+      - ./offload:/app/offload
+      - ./hf_cache:/app/.cache/huggingface
+    gpus: all
+    restart: unless-stopped
+
+  mixtral_t1:
+    build:
+      context: .
+    image: gradio-api:latest
+    profiles: ["mixtral_t1"]
+    command: ["python", "src/mixtral_7b_t100.py"]
+    environment:
+      HF_ACCESS_TOKEN: ${HF_ACCESS_TOKEN}
+      GRADIO_SERVER_NAME: 0.0.0.0
+      GRADIO_SERVER_PORT: 9011
+      GRADIO_DEBUG: ${GRADIO_DEBUG:-false}
+      LOGS_DIR: ${LOGS_DIR:-/app/logs}
+      MAX_MEMORY_PER_GPU: ${MAX_MEMORY_PER_GPU:-40GB}
+      NVIDIA_VISIBLE_DEVICES: ${MIXTRAL_T1_VISIBLE_GPUS:-0,1,2,3}
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+    ports:
+      - "${MIXTRAL_T1_HOST_BIND_IP:-127.0.0.1}:9011:9011"
+    volumes:
+      - ./logs:/app/logs
+      - ./offload:/app/offload
+      - ./hf_cache:/app/.cache/huggingface
+    gpus: all
+    restart: unless-stopped
+
+  m42_t1:
+    build:
+      context: .
+    image: gradio-api:latest
+    profiles: ["m42_t1"]
+    command: ["python", "src/m42_8b_t100.py"]
+    environment:
+      HF_ACCESS_TOKEN: ${HF_ACCESS_TOKEN}
+      GRADIO_SERVER_NAME: 0.0.0.0
+      GRADIO_SERVER_PORT: 9012
+      GRADIO_DEBUG: ${GRADIO_DEBUG:-false}
+      LOGS_DIR: ${LOGS_DIR:-/app/logs}
+      MAX_MEMORY_PER_GPU: ${MAX_MEMORY_PER_GPU:-40GB}
+      NVIDIA_VISIBLE_DEVICES: ${M42_T1_VISIBLE_GPUS:-0,1,2,3}
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+    ports:
+      - "${M42_T1_HOST_BIND_IP:-127.0.0.1}:9012:9012"
+    volumes:
+      - ./logs:/app/logs
+      - ./offload:/app/offload
+      - ./hf_cache:/app/.cache/huggingface
+    gpus: all
+    restart: unless-stopped

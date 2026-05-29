@@ -1,0 +1,30 @@
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+extend-exclude = [
+  ".venv",
+  "**/__pycache__",
+  "analytics_code/outputs",
+  "gradio_api/hf_cache",
+  "gradio_api/logs",
+  "gradio_api/offload",
+  "python_client/logs",
+  "python_client/outputs",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B"]
+ignore = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.pytest.ini_options]
+testpaths = [
+  "python_client/tests",
+  "gradio_api/tests",
+  "analytics_code/tests",
+]
+python_files = ["test_*.py"]
+addopts = "-ra"

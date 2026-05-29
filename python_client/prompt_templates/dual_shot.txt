@@ -1,0 +1,179 @@
+**Example_1:**
+
+**INPUT:**
+
+**CLINIC LETTER:**:
+
+Thank you for asking me to see this 25-year-old mother of two who works as a maternity support worker at the Snaggletooth Wing and who for the last six or seven months has had watery stools from two to nine times a day (though not at night) in association with intermittent bright red rectal bleeding. Initially she lost a stone in weight though has regained some of this and certainly not losing any more.
+
+There is no past or family history of note and she is a non-smoker on no medication. There are no eye, joint or skin complaints.  Clinically she is well with no signs of chronic disease and weighs 75 kg. She has some lower abdominal tenderness on palpation of her abdomen.
+
+Whilst I suspect that this will be benign functional disease possibly in association with further haemorrhoids we obviously need to exclude inflammatory bowel disease and I have therefore arranged for a colonoscopy and mapping biopsies and she is happy to have this done        With best wishes    Yours sincerely
+Dr Simon Pastey
+MD FRCP
+Consultant Gastroenterologist
+
+**ENDOSCOPY REPORT:**
+
+Tenesmus and difficulty evacuating stool. DRE seems normal other than reduced squeeze pressure.
+
+Poor bowel preparation particularly on the left side but reasonable views with extensive washing and suction.
+
+Tiny rectal adenoma removed by lift and cold snare Rectum = Polyp, Probable Malignancy = N
+
+**HISTOPATHOLOGY REPORT:**
+4 biopsies 2-3mm. Fragments of normal large bowel mucosa.
+
+Histopathology report: MAPPING BIOPSY SERIES STARTING FROM ASCENDING COLON. Polyp Surveillance. No macroscopic inflammation seen.
+
+**Important:** Provide only a SINGLE JSON response regarding the likelihood of IBD. Do not repeat or include multiple JSON blocks. Ensure the response is in the correct JSON format.
+
+**CLUES:** IBD Negative, normal large bowel mucosa. Clinic letter suggests IBS more likely.
+
+**REASONING:** No evidence of inflammation suggests IBD is unlikely.
+
+                **OUTCOME:**
+                ```json
+                {
+                    "Title": "Normal",
+                    "Features": [
+                        "Normal colonic mapping biopsies",
+                        "Polyp surveillance case, not IBD",
+                        "Clinic letter makes IBD less likely"
+                    ],
+                    "Likelihood of IBD": 0,
+                    "Certainty Level": 6,
+                    "Complexity of Case": 3
+                }
+                ```
+**End_Of_Example_1:**
+
+**Example_2:**
+
+**INPUT:**
+
+**CLINIC LETTER:**:
+
+Thank you for asking me to see this nice 31-year-old lady who attended clinic on her own. She describes passing dark red blood that is mixed with her stool for the past three or four months.
+
+This seems to happen on most occasions that she opens her bowels. She may open her bowels up to eight times in the morning but defaecation usually settles for the rest of the day and does not occur nocturnally. Although her stool is variable in consistency she tends more towards a soft or watery stool. Bowel opening may be associated with urgency and low abdominal cramps although these are not always relieved by defaecation. She reports a similar episode of bloody diarrhoea approximately a year ago although this lasted for only a week.       Her appetite has decreased of late and she feels that she may have lost a little bit of weight (61 kg today). She often feels sick although vomiting is only occasional. She has a butterfly feeling in her stomach. There is no bloating or visible distention.
+
+At times she has a red blotchy itchy rash on her limbs but this was not present today. She does not report mouth ulceration. Her left knee has been aching although this has not been red or swollen. Her eyes have not been red and itchy.       She has regular periods although there is usually five weeks between her cycle. Her periods are not particularly heavy. Sometimes she has an urge to pass urine but is unable to go. Otherwise her urine looks normal.    She suffers from headaches and hot flushes and feels tired all the time. Her symptoms have meant that her attendance at college has been poor. In the past she has been a carer for her parents although has now left home. She smokes 6 cigarettes per day. She does not drink excess alcohol.       On examination she was quite tender in the left and right iliac fossae but there was no palpable mass.
+
+Her blood tests including full blood count and inflammatory markers have all been normal. Inflammatory bowel disease is the most likely pathological diagnosis and she has agreed to undergo colonoscopy to investigate this further.  I will review her in clinic with the results.       Yours sincerely
+
+Dr John Bowelman
+DM FRCP
+Consultant Gastroenterologist
+
+**ENDOSCOPY REPORT:**
+
+Crohn's colitis diagnosed in NZ. Asymptomatic. Takes 5ASA PRN.
+
+Findings:
+
+No evidence of active inflammation. Pseudopolyps throughout the colon. No concerning features on chromoendoscopy. Mapping biopsies taken.
+
+Plan:
+
+Continue current management.
+Rescope in 3 years Ascending colon = Pseudopolyps; Caecum = Pseudopolyps; Descending colon = Pseudopolyps; Hepatic flexure = Pseudopolyps; Rectum = Pseudopolyps; Sigmoid colon = Pseudopolyps; Splenic flexure = Pseudopolyps; Transverse colon = Pseudopolyps
+
+**HISTOPATHOLOGY REPORT:**
+
+MAPPING BIOPSY SERIES STARTING FROM TERMINAL ILEUM
+
+CLINICAL HISTORY:
+
+                ?dysplasia.
+
+                MACROSCOPIC:
+
+                1a - Six biopsies 3-5mm.
+                1b - Four biopsies 2-4mm.
+
+                MICROSCOPIC:
+
+                The terminal ileal biopsy appears unremarkable.
+
+                Very occasional crypts show minor distortion but the
+                overall architecture is considered within normal limits. There
+                is no convincing paneth cell metaplasia. There is no evidence
+                of dysplasia or malignancy.
+
+                I note the history of Crohn's disease. However, the appearances
+                in this material are considered within normal histological
+                limits.
+
+                DIAGNOSIS:
+
+                MAPPING BIOPSIES: WITHIN NORMAL LIMITS - SEE TEXT.
+
+                REPORTED BY: Dr O Blob 13/12/2024
+
+**Important:** Provide only a SINGLE JSON response regarding the likelihood of IBD. Do not repeat or include multiple JSON blocks. Ensure the response is in the correct JSON format.
+
+**CLUES:** IBD History but now normal large bowel mucosa.
+
+**REASONING:** History of IBD mentioned but no current inflammation
+
+                **OUTCOME:**
+                ```json
+                {
+                    "Title": "Normal colonic mucosa in a patient with known IBD",
+                    "Features": [
+                        "Normal colonic mapping biopsies",
+                        "Previous known diagnosis of IBD",
+                        "High clinical suspicion in clinic letter"
+                    ],
+                    "Likelihood of IBD": 9,
+                    "Certainty Level": 8,
+                    "Complexity of Case": 7
+                }
+                ```
+
+**End_Of_Example_2:**
+
+**Now it is your turn**
+
+As a resident / junior doctor tasked with analysing gastroenterology reports. Your task is to extract key information and provide a summary in JSON format.
+
+**Instructions:**
+
+1. **CLUES:**
+Describe any important insights or motivations based on the reports. Keep it brief and relevant.
+
+2. **REASONING:**
+Explain the reasoning behind the diagnostic conclusion.
+
+3. **OUTCOME:**
+Provide the outcome in JSON format with the following fields:
+   - **Title:** A summary title for the diagnosis.
+   - **Features:** A list of key features extracted from the reports.
+   - **Likelihood of IBD:** A rating from 0 to 10 (lowest to highest) indicating the likelihood of Inflammatory Bowel Disease (IBD).
+     - **Certainty Level:** A rating from 0 to 10 (lowest to highest) indicating the certainty of the diagnosis.
+     - **Complexity of Case:** A rating from 0 to 10 (lowest to highest) indicating the complexity of the case.
+
+**Each core element from histopathology, endoscopy or clinic letters may or may not be available to you so please use the information you have available**
+
+**Please provide your response in the following format:**
+
+**CLUES:**
+<CLUES>
+
+**REASONING:**
+<REASONING>
+
+**OUTCOME:**
+                ```json
+                {
+                    "Title": "<Title>",
+                    "Features": [
+                        "<Feature 1>",
+                        "<Feature 2>"
+                    ],
+                    "Likelihood of IBD": <Likelihood of IBD>,
+                    "Certainty Level": <Certainty Level>,
+                    "Complexity of Case": <Complexity of Case>
+                }
+                ```

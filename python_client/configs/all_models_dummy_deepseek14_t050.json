@@ -1,0 +1,68 @@
+{
+  "general": {
+    "batch_size": 20,
+    "version": "all_models_realistic_dummy_v1",
+    "output_dir": "../outputs/chronology_runs",
+    "max_parallel_runners": 1,
+    "max_cases": 60,
+    "max_retries": 3,
+    "retry_delay_seconds": 0.25,
+    "token_limit": 4000,
+    "tokenizer_encoding": "cl100k_base",
+    "save_format": "xlsx",
+    "api_endpoints": {
+      "deepseek14_t05_runner": "http://127.0.0.1:9013"
+    }
+  },
+  "data_sources": {
+    "primary_reports": {
+      "path": "../data/histopathology_filtered_dummy.csv",
+      "patient_id_column": "patient_id",
+      "date_column": "sample_received_date",
+      "text_column": "result_report",
+      "date_format": "%Y-%m-%d",
+      "label": "HISTOPATHOLOGY REPORT"
+    },
+    "secondary_reports": {
+      "path": "../data/endoscopy_filtered_dummy.csv",
+      "patient_id_column": "patient_id",
+      "date_column": "procedure_date",
+      "text_column": "Combined_Content",
+      "date_format": "%Y-%m-%d",
+      "label": "ENDOSCOPY REPORT"
+    },
+    "context_notes": {
+      "path": "../data/clinical_letters_filtered_dummy.csv",
+      "patient_id_column": "patient_id",
+      "date_column": "date_creation",
+      "text_column": "clean_content",
+      "date_format": "%d-%b-%Y %H:%M:%S",
+      "preceding_label": "PRECEDING CLINIC LETTER",
+      "following_label": "FOLLOWING CLINIC LETTER"
+    }
+  },
+  "matching": {
+    "max_days_between_primary_and_secondary": 2
+  },
+  "prompt_templates": {
+    "zero": "../prompt_templates/zero_shot.txt",
+    "single": "../prompt_templates/single_shot.txt",
+    "dual": "../prompt_templates/dual_shot.txt"
+  },
+  "report_sequences": {
+    "endo": ["ENDOSCOPY REPORT"],
+    "hist": ["HISTOPATHOLOGY REPORT"],
+    "clinic_preceding": ["PRECEDING CLINIC LETTER"],
+    "clinic_following": ["FOLLOWING CLINIC LETTER"],
+    "endo_hist": ["ENDOSCOPY REPORT", "HISTOPATHOLOGY REPORT"],
+    "hist_endo": ["HISTOPATHOLOGY REPORT", "ENDOSCOPY REPORT"],
+    "clinic_both": ["PRECEDING CLINIC LETTER", "FOLLOWING CLINIC LETTER"],
+    "clinic_endo_hist": ["PRECEDING CLINIC LETTER", "ENDOSCOPY REPORT", "HISTOPATHOLOGY REPORT"],
+    "endo_hist_clinic": ["ENDOSCOPY REPORT", "HISTOPATHOLOGY REPORT", "PRECEDING CLINIC LETTER"],
+    "hist_endo_clinic": ["HISTOPATHOLOGY REPORT", "ENDOSCOPY REPORT", "PRECEDING CLINIC LETTER"],
+    "hist_clinic_endo": ["HISTOPATHOLOGY REPORT", "PRECEDING CLINIC LETTER", "ENDOSCOPY REPORT"],
+    "all_docs_in_sequence": ["PRECEDING CLINIC LETTER", "ENDOSCOPY REPORT", "HISTOPATHOLOGY REPORT", "FOLLOWING CLINIC LETTER"],
+    "all_docs_in_reverse_sequence": ["FOLLOWING CLINIC LETTER", "HISTOPATHOLOGY REPORT", "ENDOSCOPY REPORT", "PRECEDING CLINIC LETTER"],
+    "jumbled": ["FOLLOWING CLINIC LETTER", "ENDOSCOPY REPORT", "PRECEDING CLINIC LETTER", "HISTOPATHOLOGY REPORT"]
+  }
+}

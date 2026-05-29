@@ -1,0 +1,121 @@
+patient_id,date_creation,clean_content
+PSN001,07-Jan-2025 09:15:00,Polyp surveillance review; asymptomatic. Routine colonoscopy planned.
+PSN001,13-Jan-2025 14:30:00,Outpatient review: no IBD identified; symptoms attributed to functional bowel disease.
+PSN002,07-Jan-2025 09:15:00,Polyp surveillance review; asymptomatic. Routine colonoscopy planned.
+PSN002,13-Jan-2025 14:30:00,Outpatient review: no IBD identified; symptoms attributed to functional bowel disease.
+PSN003,07-Jan-2025 09:15:00,Iron deficiency anaemia work-up; no GI symptoms. Lower GI endoscopy organised.
+PSN003,13-Jan-2025 14:30:00,Reassurance given; discharged back to GP.
+PSN004,07-Jan-2025 09:15:00,Polyp surveillance review; asymptomatic. Routine colonoscopy planned.
+PSN004,13-Jan-2025 14:30:00,Follow-up clinic: histology did not confirm IBD. Conservative management; repeat calprotectin in 3 months.
+PSN005,07-Jan-2025 09:15:00,Clinic letter: bowel habit change attributed to IBS; calprotectin normal. Colonoscopy for reassurance.
+PSN005,13-Jan-2025 14:30:00,Reassurance given; discharged back to GP.
+PSN006,07-Jan-2025 09:15:00,"Outpatient assessment: nocturnal diarrhoea, urgency, abdominal pain, anaemia. High clinical suspicion of IBD."
+PSN006,13-Jan-2025 14:30:00,Post-procedure clinic: endoscopic and histological findings consistent with Crohn's disease. MDT planned.
+PSN007,07-Jan-2025 09:15:00,"Outpatient assessment: nocturnal diarrhoea, urgency, abdominal pain, anaemia. High clinical suspicion of IBD."
+PSN007,13-Jan-2025 14:30:00,Diagnosis of IBD established; gastroenterology follow-up in 6 weeks.
+PSN008,07-Jan-2025 09:15:00,Clinic letter: bowel habit change attributed to IBS; calprotectin normal. Colonoscopy for reassurance.
+PSN008,13-Jan-2025 14:30:00,Reassurance given; discharged back to GP.
+PSN009,07-Jan-2025 09:15:00,Polyp surveillance review; asymptomatic. Routine colonoscopy planned.
+PSN009,13-Jan-2025 14:30:00,Follow-up clinic: histology did not confirm IBD. Conservative management; repeat calprotectin in 3 months.
+PSN010,07-Jan-2025 09:15:00,Persistent diarrhoea with mucus and tenesmus; calprotectin 820. Lower GI endoscopy arranged.
+PSN010,13-Jan-2025 14:30:00,Post-procedure clinic: endoscopic and histological findings consistent with Crohn's disease. MDT planned.
+PSN011,07-Jan-2025 09:15:00,Clinic letter: bowel habit change attributed to IBS; calprotectin normal. Colonoscopy for reassurance.
+PSN011,13-Jan-2025 14:30:00,Reassurance given; discharged back to GP.
+PSN012,07-Jan-2025 09:15:00,Polyp surveillance review; asymptomatic. Routine colonoscopy planned.
+PSN012,13-Jan-2025 14:30:00,Outpatient review: no IBD identified; symptoms attributed to functional bowel disease.
+PSN013,07-Jan-2025 09:15:00,"Gastroenterology referral: 6-month bloody diarrhoea, weight loss, raised faecal calprotectin (>500). Colonoscopy to exclude IBD."
+PSN013,13-Jan-2025 14:30:00,Post-procedure clinic: endoscopic and histological findings consistent with Crohn's disease. MDT planned.
+PSN014,07-Jan-2025 09:15:00,Iron deficiency anaemia work-up; no GI symptoms. Lower GI endoscopy organised.
+PSN014,13-Jan-2025 14:30:00,Follow-up clinic: histology did not confirm IBD. Conservative management; repeat calprotectin in 3 months.
+PSN015,07-Jan-2025 09:15:00,Polyp surveillance review; asymptomatic. Routine colonoscopy planned.
+PSN015,13-Jan-2025 14:30:00,Outpatient review: no IBD identified; symptoms attributed to functional bowel disease.
+PSN016,07-Jan-2025 09:15:00,"Outpatient assessment: nocturnal diarrhoea, urgency, abdominal pain, anaemia. High clinical suspicion of IBD."
+PSN016,13-Jan-2025 14:30:00,Post-procedure clinic: endoscopic and histological findings consistent with Crohn's disease. MDT planned.
+PSN017,07-Jan-2025 09:15:00,"Outpatient assessment: nocturnal diarrhoea, urgency, abdominal pain, anaemia. High clinical suspicion of IBD."
+PSN017,13-Jan-2025 14:30:00,Diagnosis of IBD established; gastroenterology follow-up in 6 weeks.
+PSN018,07-Jan-2025 09:15:00,Polyp surveillance review; asymptomatic. Routine colonoscopy planned.
+PSN018,13-Jan-2025 14:30:00,Follow-up clinic: histology did not confirm IBD. Conservative management; repeat calprotectin in 3 months.
+PSN019,07-Jan-2025 09:15:00,"Outpatient assessment: nocturnal diarrhoea, urgency, abdominal pain, anaemia. High clinical suspicion of IBD."
+PSN019,13-Jan-2025 14:30:00,Follow-up: ulcerative colitis confirmed. Mesalazine commenced; biologic discussion if no response.
+PSN020,07-Jan-2025 09:15:00,"Gastroenterology referral: 6-month bloody diarrhoea, weight loss, raised faecal calprotectin (>500). Colonoscopy to exclude IBD."
+PSN020,13-Jan-2025 14:30:00,Follow-up: ulcerative colitis confirmed. Mesalazine commenced; biologic discussion if no response.
+PSN021,07-Jan-2025 09:15:00,"Gastroenterology referral: 6-month bloody diarrhoea, weight loss, raised faecal calprotectin (>500). Colonoscopy to exclude IBD."
+PSN021,13-Jan-2025 14:30:00,Follow-up: ulcerative colitis confirmed. Mesalazine commenced; biologic discussion if no response.
+PSN022,07-Jan-2025 09:15:00,Iron deficiency anaemia work-up; no GI symptoms. Lower GI endoscopy organised.
+PSN022,13-Jan-2025 14:30:00,Follow-up clinic: histology did not confirm IBD. Conservative management; repeat calprotectin in 3 months.
+PSN023,07-Jan-2025 09:15:00,Persistent diarrhoea with mucus and tenesmus; calprotectin 820. Lower GI endoscopy arranged.
+PSN023,13-Jan-2025 14:30:00,Diagnosis of IBD established; gastroenterology follow-up in 6 weeks.
+PSN024,07-Jan-2025 09:15:00,Persistent diarrhoea with mucus and tenesmus; calprotectin 820. Lower GI endoscopy arranged.
+PSN024,13-Jan-2025 14:30:00,Diagnosis of IBD established; gastroenterology follow-up in 6 weeks.
+PSN025,07-Jan-2025 09:15:00,Persistent diarrhoea with mucus and tenesmus; calprotectin 820. Lower GI endoscopy arranged.
+PSN025,13-Jan-2025 14:30:00,Follow-up: ulcerative colitis confirmed. Mesalazine commenced; biologic discussion if no response.
+PSN026,07-Jan-2025 09:15:00,"Gastroenterology referral: 6-month bloody diarrhoea, weight loss, raised faecal calprotectin (>500). Colonoscopy to exclude IBD."
+PSN026,13-Jan-2025 14:30:00,Post-procedure clinic: endoscopic and histological findings consistent with Crohn's disease. MDT planned.
+PSN027,07-Jan-2025 09:15:00,Polyp surveillance review; asymptomatic. Routine colonoscopy planned.
+PSN027,13-Jan-2025 14:30:00,Follow-up clinic: histology did not confirm IBD. Conservative management; repeat calprotectin in 3 months.
+PSN028,07-Jan-2025 09:15:00,Polyp surveillance review; asymptomatic. Routine colonoscopy planned.
+PSN028,13-Jan-2025 14:30:00,Outpatient review: no IBD identified; symptoms attributed to functional bowel disease.
+PSN029,07-Jan-2025 09:15:00,"Outpatient assessment: nocturnal diarrhoea, urgency, abdominal pain, anaemia. High clinical suspicion of IBD."
+PSN029,13-Jan-2025 14:30:00,Post-procedure clinic: endoscopic and histological findings consistent with Crohn's disease. MDT planned.
+PSN030,07-Jan-2025 09:15:00,Iron deficiency anaemia work-up; no GI symptoms. Lower GI endoscopy organised.
+PSN030,13-Jan-2025 14:30:00,Reassurance given; discharged back to GP.
+PSN031,07-Jan-2025 09:15:00,"Gastroenterology referral: 6-month bloody diarrhoea, weight loss, raised faecal calprotectin (>500). Colonoscopy to exclude IBD."
+PSN031,13-Jan-2025 14:30:00,Diagnosis of IBD established; gastroenterology follow-up in 6 weeks.
+PSN032,07-Jan-2025 09:15:00,Clinic letter: bowel habit change attributed to IBS; calprotectin normal. Colonoscopy for reassurance.
+PSN032,13-Jan-2025 14:30:00,Follow-up clinic: histology did not confirm IBD. Conservative management; repeat calprotectin in 3 months.
+PSN033,07-Jan-2025 09:15:00,Iron deficiency anaemia work-up; no GI symptoms. Lower GI endoscopy organised.
+PSN033,13-Jan-2025 14:30:00,Follow-up clinic: histology did not confirm IBD. Conservative management; repeat calprotectin in 3 months.
+PSN034,07-Jan-2025 09:15:00,"Outpatient assessment: nocturnal diarrhoea, urgency, abdominal pain, anaemia. High clinical suspicion of IBD."
+PSN034,13-Jan-2025 14:30:00,Diagnosis of IBD established; gastroenterology follow-up in 6 weeks.
+PSN035,07-Jan-2025 09:15:00,"Outpatient assessment: nocturnal diarrhoea, urgency, abdominal pain, anaemia. High clinical suspicion of IBD."
+PSN035,13-Jan-2025 14:30:00,Diagnosis of IBD established; gastroenterology follow-up in 6 weeks.
+PSN036,07-Jan-2025 09:15:00,Clinic letter: bowel habit change attributed to IBS; calprotectin normal. Colonoscopy for reassurance.
+PSN036,13-Jan-2025 14:30:00,Reassurance given; discharged back to GP.
+PSN037,07-Jan-2025 09:15:00,Polyp surveillance review; asymptomatic. Routine colonoscopy planned.
+PSN037,13-Jan-2025 14:30:00,Follow-up clinic: histology did not confirm IBD. Conservative management; repeat calprotectin in 3 months.
+PSN038,07-Jan-2025 09:15:00,Iron deficiency anaemia work-up; no GI symptoms. Lower GI endoscopy organised.
+PSN038,13-Jan-2025 14:30:00,Reassurance given; discharged back to GP.
+PSN039,07-Jan-2025 09:15:00,Iron deficiency anaemia work-up; no GI symptoms. Lower GI endoscopy organised.
+PSN039,13-Jan-2025 14:30:00,Follow-up clinic: histology did not confirm IBD. Conservative management; repeat calprotectin in 3 months.
+PSN040,07-Jan-2025 09:15:00,"Gastroenterology referral: 6-month bloody diarrhoea, weight loss, raised faecal calprotectin (>500). Colonoscopy to exclude IBD."
+PSN040,13-Jan-2025 14:30:00,Diagnosis of IBD established; gastroenterology follow-up in 6 weeks.
+PSN041,07-Jan-2025 09:15:00,Iron deficiency anaemia work-up; no GI symptoms. Lower GI endoscopy organised.
+PSN041,13-Jan-2025 14:30:00,Follow-up clinic: histology did not confirm IBD. Conservative management; repeat calprotectin in 3 months.
+PSN042,07-Jan-2025 09:15:00,Iron deficiency anaemia work-up; no GI symptoms. Lower GI endoscopy organised.
+PSN042,13-Jan-2025 14:30:00,Outpatient review: no IBD identified; symptoms attributed to functional bowel disease.
+PSN043,07-Jan-2025 09:15:00,Clinic letter: bowel habit change attributed to IBS; calprotectin normal. Colonoscopy for reassurance.
+PSN043,13-Jan-2025 14:30:00,Outpatient review: no IBD identified; symptoms attributed to functional bowel disease.
+PSN044,07-Jan-2025 09:15:00,"Outpatient assessment: nocturnal diarrhoea, urgency, abdominal pain, anaemia. High clinical suspicion of IBD."
+PSN044,13-Jan-2025 14:30:00,Follow-up: ulcerative colitis confirmed. Mesalazine commenced; biologic discussion if no response.
+PSN045,07-Jan-2025 09:15:00,"Outpatient assessment: nocturnal diarrhoea, urgency, abdominal pain, anaemia. High clinical suspicion of IBD."
+PSN045,13-Jan-2025 14:30:00,Post-procedure clinic: endoscopic and histological findings consistent with Crohn's disease. MDT planned.
+PSN046,07-Jan-2025 09:15:00,"Outpatient assessment: nocturnal diarrhoea, urgency, abdominal pain, anaemia. High clinical suspicion of IBD."
+PSN046,13-Jan-2025 14:30:00,Follow-up: ulcerative colitis confirmed. Mesalazine commenced; biologic discussion if no response.
+PSN047,07-Jan-2025 09:15:00,Clinic letter: bowel habit change attributed to IBS; calprotectin normal. Colonoscopy for reassurance.
+PSN047,13-Jan-2025 14:30:00,Follow-up clinic: histology did not confirm IBD. Conservative management; repeat calprotectin in 3 months.
+PSN048,07-Jan-2025 09:15:00,Clinic letter: bowel habit change attributed to IBS; calprotectin normal. Colonoscopy for reassurance.
+PSN048,13-Jan-2025 14:30:00,Outpatient review: no IBD identified; symptoms attributed to functional bowel disease.
+PSN049,07-Jan-2025 09:15:00,"Gastroenterology referral: 6-month bloody diarrhoea, weight loss, raised faecal calprotectin (>500). Colonoscopy to exclude IBD."
+PSN049,13-Jan-2025 14:30:00,Follow-up: ulcerative colitis confirmed. Mesalazine commenced; biologic discussion if no response.
+PSN050,07-Jan-2025 09:15:00,Polyp surveillance review; asymptomatic. Routine colonoscopy planned.
+PSN050,13-Jan-2025 14:30:00,Follow-up clinic: histology did not confirm IBD. Conservative management; repeat calprotectin in 3 months.
+PSN051,07-Jan-2025 09:15:00,"Outpatient assessment: nocturnal diarrhoea, urgency, abdominal pain, anaemia. High clinical suspicion of IBD."
+PSN051,13-Jan-2025 14:30:00,Follow-up: ulcerative colitis confirmed. Mesalazine commenced; biologic discussion if no response.
+PSN052,07-Jan-2025 09:15:00,Persistent diarrhoea with mucus and tenesmus; calprotectin 820. Lower GI endoscopy arranged.
+PSN052,13-Jan-2025 14:30:00,Post-procedure clinic: endoscopic and histological findings consistent with Crohn's disease. MDT planned.
+PSN053,07-Jan-2025 09:15:00,Iron deficiency anaemia work-up; no GI symptoms. Lower GI endoscopy organised.
+PSN053,13-Jan-2025 14:30:00,Outpatient review: no IBD identified; symptoms attributed to functional bowel disease.
+PSN054,07-Jan-2025 09:15:00,Persistent diarrhoea with mucus and tenesmus; calprotectin 820. Lower GI endoscopy arranged.
+PSN054,13-Jan-2025 14:30:00,Follow-up: ulcerative colitis confirmed. Mesalazine commenced; biologic discussion if no response.
+PSN055,07-Jan-2025 09:15:00,"Gastroenterology referral: 6-month bloody diarrhoea, weight loss, raised faecal calprotectin (>500). Colonoscopy to exclude IBD."
+PSN055,13-Jan-2025 14:30:00,Post-procedure clinic: endoscopic and histological findings consistent with Crohn's disease. MDT planned.
+PSN056,07-Jan-2025 09:15:00,"Outpatient assessment: nocturnal diarrhoea, urgency, abdominal pain, anaemia. High clinical suspicion of IBD."
+PSN056,13-Jan-2025 14:30:00,Diagnosis of IBD established; gastroenterology follow-up in 6 weeks.
+PSN057,07-Jan-2025 09:15:00,Persistent diarrhoea with mucus and tenesmus; calprotectin 820. Lower GI endoscopy arranged.
+PSN057,13-Jan-2025 14:30:00,Diagnosis of IBD established; gastroenterology follow-up in 6 weeks.
+PSN058,07-Jan-2025 09:15:00,Iron deficiency anaemia work-up; no GI symptoms. Lower GI endoscopy organised.
+PSN058,13-Jan-2025 14:30:00,Reassurance given; discharged back to GP.
+PSN059,07-Jan-2025 09:15:00,Persistent diarrhoea with mucus and tenesmus; calprotectin 820. Lower GI endoscopy arranged.
+PSN059,13-Jan-2025 14:30:00,Diagnosis of IBD established; gastroenterology follow-up in 6 weeks.
+PSN060,07-Jan-2025 09:15:00,Persistent diarrhoea with mucus and tenesmus; calprotectin 820. Lower GI endoscopy arranged.
+PSN060,13-Jan-2025 14:30:00,Follow-up: ulcerative colitis confirmed. Mesalazine commenced; biologic discussion if no response.
