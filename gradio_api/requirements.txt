@@ -3,7 +3,7 @@ gradio==5.8.0
 huggingface-hub==1.10.1
 safetensors==0.4.5
 sentencepiece==0.2.0
-protobuf==5.29.3
+protobuf==5.29.6
 requests==2.32.5
 torch==2.8.0
 transformers==5.5.3
