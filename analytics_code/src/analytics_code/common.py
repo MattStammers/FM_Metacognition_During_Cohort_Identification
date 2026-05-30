@@ -72,6 +72,127 @@ FAIR_DATA_TYPES: tuple[str, ...] = (
     "clinic_following",
 )
 
+# ---------------------------------------------------------------------------
+# Tier definitions for the published "Document / Cumulative / Final /
+# Doc2Patient" analysis (mirrors Table 3.2.4-1 of the paper).
+# ---------------------------------------------------------------------------
+#
+# Document tier: single-physician-marker rows. Each row corresponds to
+# one report type and is scored against the matching physician flag.
+SINGLE_DOC_DATA_TYPES: tuple[str, ...] = (
+    "hist",
+    "endo",
+    "clinic_preceding",
+    "clinic_following",
+)
+
+#: Mapping from canonical document type to the physician-marker column
+#: in the human reference workbook. The dummy reference file
+#: (``pseudonymised_dummy_reference_document_flags.csv``) provides the
+#: canonical column names; real-data configs can override via
+#: ``analysis.document_flag_columns``.
+DOC_FLAG_COLUMNS: dict[str, str] = {
+    "histology": "histology_ibd_flag",
+    "endoscopy": "endoscopy_ibd_flag",
+    "preceding_clinic": "preceding_clinic_ibd_flag",
+    "following_clinic": "following_clinic_ibd_flag",
+}
+
+#: Mapping from each single-doc ``report_sequence_name`` value to the
+#: canonical doc type that row represents. Used by the Document tier
+#: to pick the right physician marker per row.
+SINGLE_DOC_TYPE_MAP: dict[str, str] = {
+    "hist": "histology",
+    "endo": "endoscopy",
+    "clinic_preceding": "preceding_clinic",
+    "clinic_following": "following_clinic",
+}
+
+#: Explicit data_type -> set of physician-marker doc types shown in
+#: that prompt. Drives the Cumulative-tier reference (logical OR over
+#: the documents actually shown to the model in that data_type). The
+#: three-document ``*_clinic*`` sequences in the dummy prompt configs
+#: include a single "CLINIC LETTER" slot but the methodology treats
+#: that as evidence from either clinic letter, so both clinic markers
+#: are OR'd (matches the "any IBD evidence in any linked doc" intent).
+DATA_TYPE_DOCUMENT_SET: dict[str, tuple[str, ...]] = {
+    # Single-doc data types -- one physician marker each.
+    "hist": ("histology",),
+    "endo": ("endoscopy",),
+    "clinic_preceding": ("preceding_clinic",),
+    "clinic_following": ("following_clinic",),
+    # Two-doc data types.
+    "endo_hist": ("endoscopy", "histology"),
+    "hist_endo": ("histology", "endoscopy"),
+    "clinic_both": ("preceding_clinic", "following_clinic"),
+    # Three-doc data types -- single "CLINIC LETTER" slot maps to
+    # OR(preceding, following) per the methodology.
+    "clinic_endo_hist": (
+        "preceding_clinic",
+        "following_clinic",
+        "endoscopy",
+        "histology",
+    ),
+    "endo_hist_clinic": (
+        "endoscopy",
+        "histology",
+        "preceding_clinic",
+        "following_clinic",
+    ),
+    "hist_endo_clinic": (
+        "histology",
+        "endoscopy",
+        "preceding_clinic",
+        "following_clinic",
+    ),
+    "hist_clinic_endo": (
+        "histology",
+        "preceding_clinic",
+        "following_clinic",
+        "endoscopy",
+    ),
+    # Four-doc / full bundle data types.
+    "all_docs_in_sequence": (
+        "preceding_clinic",
+        "endoscopy",
+        "histology",
+        "following_clinic",
+    ),
+    "all_docs_in_reverse_sequence": (
+        "following_clinic",
+        "histology",
+        "endoscopy",
+        "preceding_clinic",
+    ),
+    "jumbled": (
+        "following_clinic",
+        "endoscopy",
+        "preceding_clinic",
+        "histology",
+    ),
+}
+
+#: Cumulative-tier data types -- everything in
+#: :data:`DATA_TYPE_DOCUMENT_SET` that is not a single-doc row.
+MULTI_DOC_DATA_TYPES: tuple[str, ...] = tuple(
+    dt for dt in DATA_TYPE_DOCUMENT_SET if dt not in SINGLE_DOC_DATA_TYPES
+)
+
+
+def tier_of(data_type: object) -> str:
+    """Classify ``data_type`` into ``"document"``, ``"cumulative"`` or ``"unknown"``.
+
+    Used by :mod:`analytics_code.tiered_performance` to route each row
+    of the merged outputs to the right tier.
+    """
+    key = str(data_type).strip().lower() if data_type is not None else ""
+    if key in SINGLE_DOC_DATA_TYPES:
+        return "document"
+    if key in DATA_TYPE_DOCUMENT_SET:
+        return "cumulative"
+    return "unknown"
+
+
 PUBLICATION_DPI: int = 600
 
 MODEL_DISPLAY_NAMES: dict[str, str] = {

@@ -12,9 +12,12 @@ import re
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 from analytics_code.common import (
+    MULTI_DOC_DATA_TYPES,
+    SINGLE_DOC_DATA_TYPES,
     canonicalize_model,
     ensure_dir,
     write_dataframe,
@@ -22,6 +25,7 @@ from analytics_code.common import (
 )
 from analytics_code.config import AnalysisConfig
 from analytics_code.json_repair import REPAIR_TYPES, parse_response
+from analytics_code.predictions import clean_likelihood
 from analytics_code.truth_labels import build_document_truth_series
 
 #: Lenient document-sequence truth column materialised into
@@ -36,6 +40,12 @@ DOCUMENT_SEQUENCE_TRUTH_LENIENT = "_document_sequence_truth_lenient"
 #: relevant marker for the sequence is missing. Sensitivity label
 #: only -- never used as the default truth.
 DOCUMENT_SEQUENCE_TRUTH_STRICT = "_document_sequence_truth_strict"
+
+#: Patient-level document-derived truth: logical OR over the four
+#: physician document markers for each ``patient_id``. Constant within
+#: a patient and used as the reference standard for the Final_* tier
+#: in :mod:`analytics_code.tiered_performance`.
+PATIENT_DOCUMENT_TRUTH = "_patient_document_truth"
 
 JSON_PATTERN = re.compile(r"\{.*\}", re.DOTALL)
 PROMPT_PATTERN = re.compile(r"^(zero|single|dual)_shot_(.+)$")
@@ -486,6 +496,10 @@ def _attach_document_sequence_truth_columns(frame: pd.DataFrame) -> pd.DataFrame
     Adds :data:`DOCUMENT_SEQUENCE_TRUTH_LENIENT` and
     :data:`DOCUMENT_SEQUENCE_TRUTH_STRICT` to ``frame`` so downstream
     stages can select either truth definition without recomputing it.
+    Also attaches :data:`PATIENT_DOCUMENT_TRUTH`, the per-``patient_id``
+    OR over the four physician document markers, used as the Final_*
+    tier reference standard.
+
     Returns ``frame`` unchanged when no document markers can be
     resolved (e.g. reference-only chronology configs).
     """
@@ -499,7 +513,189 @@ def _attach_document_sequence_truth_columns(frame: pd.DataFrame) -> pd.DataFrame
     out = frame.copy()
     out[DOCUMENT_SEQUENCE_TRUTH_LENIENT] = lenient
     out[DOCUMENT_SEQUENCE_TRUTH_STRICT] = strict
+    out = _attach_patient_document_truth(out)
     return out
+
+
+def _attach_patient_document_truth(frame: pd.DataFrame) -> pd.DataFrame:
+    """Attach :data:`PATIENT_DOCUMENT_TRUTH` (OR over four doc flags per patient).
+
+    Looks up the four physician marker columns named in
+    :data:`analytics_code.common.DOC_FLAG_COLUMNS`. For each
+    ``patient_id`` the value is ``1`` if any available marker is ``1``,
+    ``0`` if at least one marker is observed and none are positive,
+    and ``NaN`` if no marker is available for that patient. The column
+    is broadcast back across every row for that patient so each row
+    carries the patient-level label.
+    """
+    from analytics_code.common import DOC_FLAG_COLUMNS
+    from analytics_code.truth_labels import _coerce_binary_series
+
+    id_col = next(
+        (c for c in ("patient_id", "study_id", "PatientID") if c in frame.columns),
+        None,
+    )
+    if id_col is None:
+        return frame
+    marker_cols = [c for c in DOC_FLAG_COLUMNS.values() if c in frame.columns]
+    if not marker_cols:
+        return frame
+    binary = pd.concat(
+        {c: _coerce_binary_series(frame[c]) for c in marker_cols}, axis=1
+    )
+    # Reduce to one row per patient by taking the max (any positive)
+    # and tracking availability separately.
+    grouped = binary.groupby(frame[id_col].astype(object), dropna=False)
+    any_positive = grouped.max()  # 1 if any positive, 0 if all zero, NaN if all missing
+    any_known = grouped.apply(lambda g: g.notna().any().any())
+    patient_truth = pd.Series(np.nan, index=any_positive.index, dtype="float64")
+    pos_mask = (any_positive == 1).any(axis=1)
+    patient_truth.loc[pos_mask] = 1.0
+    neg_mask = (~pos_mask) & any_known
+    patient_truth.loc[neg_mask] = 0.0
+    mapped = frame[id_col].astype(object).map(patient_truth)
+    out = frame.copy()
+    out[PATIENT_DOCUMENT_TRUTH] = pd.to_numeric(mapped, errors="coerce")
+    return out
+
+
+def _validation_level(config: AnalysisConfig) -> str:
+    """Return the configured validation view slug.
+
+    Supported values are ``document``, ``cumulative``, ``final``, and
+    ``doc2patient``. Any other value disables view transformation.
+    """
+    level = str(config.analysis.get("validation_level", "")).strip().lower()
+    if level in {"document", "cumulative", "final", "doc2patient"}:
+        return level
+    return ""
+
+
+def _concat_unique_text(values: pd.Series) -> str:
+    """Concatenate non-empty unique strings preserving first-seen order."""
+    seen: list[str] = []
+    for value in values.fillna("").astype(str):
+        text = value.strip()
+        if not text or text in seen:
+            continue
+        seen.append(text)
+    return "\n\n".join(seen)
+
+
+def _aggregate_patient_level_view(
+    frame: pd.DataFrame, *, final_truth: bool = False
+) -> pd.DataFrame:
+    """Collapse rows to one patient-level record per model/shot/temperature.
+
+    This operationalises the methodology's Final / Doc2Patient unit of
+    analysis: one row per ``(patient_id, model_canon, shot_type,
+    temperature)`` where the prediction is the logical OR over every
+    linked-row prediction for that patient.
+
+    ``final_truth=True`` rewrites ``Patient_Has_IBD`` / ``ground_truth``
+    to the document-derived patient endpoint so downstream stages score
+    against the Final_* reference standard. ``False`` keeps the chart-
+    verified patient label for the Doc2Patient secondary endpoint.
+    """
+    if frame.empty or "likelihood_score" not in frame.columns:
+        return frame
+    patient_col = next(
+        (c for c in ("patient_id", "study_id", "PatientID") if c in frame.columns),
+        None,
+    )
+    if patient_col is None:
+        return frame
+
+    group_cols = [
+        patient_col,
+        *[
+            c
+            for c in (
+                "runner_name",
+                "model",
+                "display_model",
+                "model_canon",
+                "shot_type",
+                "temperature",
+            )
+            if c in frame.columns
+        ],
+    ]
+    working = frame.copy()
+    bucket = clean_likelihood(working["likelihood_score"])
+    working["__row_pred"] = bucket.fillna(-1).ge(5).astype(int)
+    grouped = working.groupby(group_cols, dropna=False)
+    out = grouped.first().reset_index()
+    out["likelihood_score"] = grouped["__row_pred"].max().to_numpy(dtype=float) * 10.0
+    if "Likelihood of IBD" in out.columns:
+        out["Likelihood of IBD"] = out["likelihood_score"]
+    if "certainty_score" in working.columns:
+        out["certainty_score"] = grouped["certainty_score"].max().to_numpy(dtype=float)
+    if "Certainty Level" in out.columns and "certainty_score" in out.columns:
+        out["Certainty Level"] = out["certainty_score"]
+    if "complexity_score" in working.columns:
+        out["complexity_score"] = (
+            grouped["complexity_score"].max().to_numpy(dtype=float)
+        )
+    if "Complexity of Case" in out.columns and "complexity_score" in out.columns:
+        out["Complexity of Case"] = out["complexity_score"]
+    if "json_parse_success" in working.columns:
+        out["json_parse_success"] = (
+            grouped["json_parse_success"].max().to_numpy(dtype=int)
+        )
+    if "json_schema_valid" in working.columns:
+        out["json_schema_valid"] = (
+            grouped["json_schema_valid"].max().to_numpy(dtype=int)
+        )
+    if "truncated" in working.columns:
+        out["truncated"] = grouped["truncated"].any().to_numpy(dtype=bool)
+    if "response_tokens" in working.columns:
+        out["response_tokens"] = grouped["response_tokens"].sum().to_numpy(dtype=int)
+    for text_col in (
+        "full_response",
+        "json_response",
+        "payload",
+        "clues_text",
+        "reasoning_text",
+        "Title",
+        "Features",
+        "Combined_Content",
+        "result_report",
+    ):
+        if text_col in working.columns:
+            out[text_col] = grouped[text_col].apply(_concat_unique_text).to_numpy()
+
+    # Reuse the production FAIR filters by assigning a single canonical
+    # context slug to the patient-level endpoint.
+    out["report_sequence_name"] = "all_docs_in_sequence"
+    if "experiment_name" in out.columns:
+        out["experiment_name"] = "final_patient"
+    if PATIENT_DOCUMENT_TRUTH in working.columns:
+        out[PATIENT_DOCUMENT_TRUTH] = (
+            grouped[PATIENT_DOCUMENT_TRUTH].first().to_numpy(dtype=float)
+        )
+        if final_truth:
+            out["Patient_Has_IBD"] = out[PATIENT_DOCUMENT_TRUTH]
+            out["ground_truth"] = out[PATIENT_DOCUMENT_TRUTH]
+    return out.drop(columns=[c for c in ("__row_pred",) if c in out.columns])
+
+
+def _apply_validation_level_view(
+    frame: pd.DataFrame, config: AnalysisConfig
+) -> pd.DataFrame:
+    """Return ``frame`` filtered/aggregated for the configured validation level."""
+    level = _validation_level(config)
+    if not level or frame.empty or "report_sequence_name" not in frame.columns:
+        return frame
+    if level == "document":
+        return frame[frame["report_sequence_name"].isin(SINGLE_DOC_DATA_TYPES)].copy()
+    if level == "cumulative":
+        return frame[frame["report_sequence_name"].isin(MULTI_DOC_DATA_TYPES)].copy()
+    if level == "final":
+        return _aggregate_patient_level_view(frame, final_truth=True)
+    if level == "doc2patient":
+        return _aggregate_patient_level_view(frame, final_truth=False)
+    return frame
 
 
 def _folder_label(row: pd.Series) -> str:
@@ -708,6 +904,7 @@ def run_data_prep(config: AnalysisConfig) -> dict[str, Path]:
         )
 
         normalized = normalize_chronology_outputs(combined, config)
+        normalized = _apply_validation_level_view(normalized, config)
         outputs["parsed_outputs"] = write_dataframe(
             normalized, stage_dir / "parsed_outputs.csv"
         )
@@ -732,6 +929,7 @@ def run_data_prep(config: AnalysisConfig) -> dict[str, Path]:
             normalized, reference_path, id_column=id_column
         )
         merged = _attach_document_sequence_truth_columns(merged)
+        merged = _apply_validation_level_view(merged, config)
         outputs["merged_outputs"] = write_dataframe(
             merged, stage_dir / "merged_outputs.csv"
         )
