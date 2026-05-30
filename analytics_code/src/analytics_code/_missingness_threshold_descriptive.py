@@ -531,11 +531,17 @@ def _confidence_complexity(
             color=str(style["color"]),
             label=str(pool),
         )
+    certainty_ticks = list(
+        range(
+            int(certainty_df["certainty_bucket"].min()),
+            int(certainty_df["certainty_bucket"].max()) + 1,
+        )
+    )
     ax_cert.set_xlabel("Certainty bucket")
     ax_cert.set_ylabel("Macro F1")
     ax_cert.set_title("Macro F1 by certainty bucket for pooled model families")
-    ax_cert.set_xlim(0.9, 10.1)
-    ax_cert.set_xticks(list(range(1, 11)))
+    ax_cert.set_xlim(certainty_ticks[0] - 0.1, certainty_ticks[-1] + 0.1)
+    ax_cert.set_xticks(certainty_ticks)
     ax_cert.set_ylim(0.0, 1.0)
     ax_cert.set_yticks(nice_numeric_ticks(0.0, 1.0, 0.1))
     set_publication_axes(ax_cert, show_grid_y=True, show_grid_x=False)

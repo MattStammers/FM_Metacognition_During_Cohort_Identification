@@ -582,7 +582,7 @@ def save_figure(path: Path) -> Path:
     """
     ensure_dir(path.parent)
     plt.tight_layout()
-    plt.savefig(path, dpi=PUBLICATION_DPI, bbox_inches="tight")
+    plt.savefig(path, dpi=PUBLICATION_DPI, bbox_inches="tight", pad_inches=0.2)
     plt.close()
     LOGGER.info("Saved figure to %s", path)
     return path
@@ -608,4 +608,29 @@ def canonicalize_model(model_name: str, mapping: dict[str, str]) -> str:
     unknown names are returned unchanged after stripping whitespace.
     """
     stripped = str(model_name).strip()
-    return mapping.get(stripped, stripped)
+    if stripped in mapping:
+        return mapping[stripped]
+
+    lowered = stripped.lower()
+    lowered_mapping = {
+        str(key).strip().lower(): value for key, value in mapping.items()
+    }
+    if lowered in lowered_mapping:
+        return lowered_mapping[lowered]
+
+    family_patterns: tuple[tuple[str, str], ...] = (
+        (r"deepseek.*14", "deepseek14b"),
+        (r"deepseek.*32", "deepseek32b"),
+        (r"deepseek.*70", "deepseek70b"),
+        (r"mixtral", "mixtral7b"),
+        (r"m42", "m42_8b"),
+        (r"qwen.*32", "qwen32b"),
+        (r"gemma.*31", "gemma4_31b"),
+        (r"gemma.*26", "gemma4_26b_a4b"),
+        (r"gemma.*e2b", "gemma4_e2b"),
+        (r"gemma.*e4b", "gemma4_e4b"),
+    )
+    for pattern, canonical in family_patterns:
+        if re.search(pattern, lowered):
+            return canonical
+    return stripped

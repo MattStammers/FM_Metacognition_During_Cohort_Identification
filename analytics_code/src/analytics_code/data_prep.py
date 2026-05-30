@@ -113,19 +113,65 @@ def _infer_temperature(value: str, runner_metadata: dict[str, Any]) -> float | N
     )
     if metadata_value is not None:
         return float(metadata_value)
-    match = TEMP_PATTERN.search(value)
-    if not match:
-        return None
-    digits = match.group(1)
-    if len(digits) == 2:
-        return float(f"0.{digits}")
-    if len(digits) == 3:
-        return (
-            float(f"{digits[0]}.{digits[1:]}")
-            if digits[0] != "0"
-            else float(f"0.{digits[1:]}")
-        )
+    text = str(value).strip().lower()
+    for pattern, parser in (
+        (r"_t(\d)_(\d{2})(?=_|$)", lambda m: float(f"{m.group(1)}.{m.group(2)}")),
+        (
+            r"_t(\d{2,3})(?=_|$)",
+            lambda m: (
+                float(f"{m.group(1)[0]}.{m.group(1)[1]}")
+                if len(m.group(1)) == 2
+                else (
+                    float(f"{m.group(1)[0]}.{m.group(1)[1:]}")
+                    if m.group(1)[0] != "0"
+                    else float(f"0.{m.group(1)[1:]}")
+                )
+            ),
+        ),
+        (r"_t(\d)(?=_|$)", lambda m: float(m.group(1))),
+    ):
+        match = re.search(pattern, text)
+        if match:
+            return parser(match)
     return None
+
+
+def _temperature_slug(value: float | int | None) -> str:
+    """Return a folder-safe ``t<temp>`` slug such as ``t0_75``."""
+    if value is None or pd.isna(value):
+        return ""
+    return f"t{float(value):.2f}".replace(".", "_")
+
+
+def _standardize_display_model(
+    runner_name: object,
+    display_model: object,
+    model_canon: object,
+    temperature: object,
+    runner_metadata: dict[str, Any],
+) -> str:
+    """Normalise display labels for unmapped runners.
+
+    When runner metadata provides a display name we keep it verbatim.
+    Otherwise, derive a stable ``<canonical>_t<temp>`` label so folder-
+    based downstream analyses continue to group by canonical model.
+    """
+    runner_key = str(runner_name).strip()
+    metadata_display = (
+        runner_metadata.get(runner_key, {}).get("display_name")
+        if isinstance(runner_metadata.get(runner_key, {}), dict)
+        else None
+    )
+    if metadata_display:
+        return str(metadata_display)
+
+    canonical = str(model_canon).strip()
+    temp = pd.to_numeric(pd.Series([temperature]), errors="coerce").iloc[0]
+    if canonical and canonical != runner_key and not pd.isna(temp):
+        return f"{canonical}_{_temperature_slug(float(temp))}"
+    if canonical and canonical != runner_key:
+        return canonical
+    return str(display_model).strip() or runner_key
 
 
 def _extract_prompt_sections(text: Any) -> tuple[str, str]:
@@ -232,11 +278,23 @@ def normalize_chronology_outputs(
     frame["display_model"] = frame["runner_name"].map(
         lambda value: runner_metadata.get(value, {}).get("display_name", value)
     )
-    frame["temperature"] = frame["display_model"].map(
-        lambda value: _infer_temperature(str(value), runner_metadata)
+    frame["temperature"] = frame.apply(
+        lambda row: _infer_temperature(str(row["display_model"]), runner_metadata)
+        or _infer_temperature(str(row["runner_name"]), runner_metadata),
+        axis=1,
     )
     frame["model_canon"] = frame["display_model"].map(
         lambda value: canonicalize_model(str(value), config.model_mapping)
+    )
+    frame["display_model"] = frame.apply(
+        lambda row: _standardize_display_model(
+            row.get("runner_name"),
+            row.get("display_model"),
+            row.get("model_canon"),
+            row.get("temperature"),
+            runner_metadata,
+        ),
+        axis=1,
     )
 
     # Primary-configuration tag (pre-specified hierarchy). The
@@ -606,6 +664,26 @@ def _aggregate_patient_level_view(
     if patient_col is None:
         return frame
 
+    # Match the document-to-patient boundary in the reference pipelines:
+    # patient-level outcomes are collapsed from the canonical cumulative
+    # context rather than from the mixed pool of single-document rows or
+    # alternative cumulative prompt orderings. Prefer the production
+    # ``all_docs_in_sequence`` view when it exists; otherwise fall back to
+    # any multi-document context.
+    working = frame.copy()
+    if "report_sequence_name" in working.columns:
+        canonical = working[
+            working["report_sequence_name"].eq("all_docs_in_sequence")
+        ].copy()
+        if not canonical.empty:
+            working = canonical
+        else:
+            cumulative = working[
+                working["report_sequence_name"].isin(MULTI_DOC_DATA_TYPES)
+            ].copy()
+            if not cumulative.empty:
+                working = cumulative
+
     group_cols = [
         patient_col,
         *[
@@ -621,12 +699,12 @@ def _aggregate_patient_level_view(
             if c in frame.columns
         ],
     ]
-    working = frame.copy()
     bucket = clean_likelihood(working["likelihood_score"])
     working["__row_pred"] = bucket.fillna(-1).ge(5).astype(int)
+    working["__bucket"] = bucket
     grouped = working.groupby(group_cols, dropna=False)
     out = grouped.first().reset_index()
-    out["likelihood_score"] = grouped["__row_pred"].max().to_numpy(dtype=float) * 10.0
+    out["likelihood_score"] = grouped["__bucket"].max().to_numpy(dtype=float)
     if "Likelihood of IBD" in out.columns:
         out["Likelihood of IBD"] = out["likelihood_score"]
     if "certainty_score" in working.columns:
@@ -677,7 +755,17 @@ def _aggregate_patient_level_view(
         if final_truth:
             out["Patient_Has_IBD"] = out[PATIENT_DOCUMENT_TRUTH]
             out["ground_truth"] = out[PATIENT_DOCUMENT_TRUTH]
-    return out.drop(columns=[c for c in ("__row_pred",) if c in out.columns])
+    if not final_truth:
+        patient_truth_source = None
+        for candidate in ("Patient_Has_IBD", "ground_truth"):
+            if candidate in working.columns:
+                patient_truth_source = candidate
+                break
+        if patient_truth_source is not None:
+            patient_truth = grouped[patient_truth_source].max().to_numpy(dtype=float)
+            out["Patient_Has_IBD"] = patient_truth
+            out["ground_truth"] = patient_truth
+    return out.drop(columns=[c for c in ("__row_pred", "__bucket") if c in out.columns])
 
 
 def _apply_validation_level_view(
