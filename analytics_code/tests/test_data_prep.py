@@ -8,6 +8,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
+from analytics_code.common import PATIENT_AGGREGATED_SEQUENCE_NAME
 from analytics_code.config import AnalysisConfig
 from analytics_code.data_prep import (
     DOCUMENT_SEQUENCE_TRUTH_LENIENT,
@@ -344,7 +345,8 @@ def test_aggregate_patient_level_view_preserves_max_likelihood_bucket() -> None:
     assert out["likelihood_score"].iloc[0] == pytest.approx(6.0)
     assert out["certainty_score"].iloc[0] == pytest.approx(8.0)
     assert out["complexity_score"].iloc[0] == pytest.approx(5.0)
-    assert out["report_sequence_name"].iloc[0] == "all_docs_in_sequence"
+    assert out["report_sequence_name"].iloc[0] == PATIENT_AGGREGATED_SEQUENCE_NAME
+    assert bool(out["is_primary_configuration"].iloc[0]) is True
     assert out["Patient_Has_IBD"].iloc[0] == pytest.approx(1.0)
     assert out["ground_truth"].iloc[0] == pytest.approx(1.0)
 

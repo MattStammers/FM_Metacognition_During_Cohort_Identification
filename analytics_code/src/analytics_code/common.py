@@ -60,12 +60,18 @@ FAIR_TEMPERATURE_LABELS: tuple[str, ...] = ("0_50", "0_60", "0_75", "1_00")
 #: the pipeline.
 ZERO_SHOT_LABEL: str = "zero"
 
+#: Synthetic ``report_sequence_name`` assigned to patient-level rows
+#: that are aggregated from single-document predictions rather than
+#: sourced from a direct multi-document prompt variant.
+PATIENT_AGGREGATED_SEQUENCE_NAME: str = "patient_aggregated_from_documents"
+
 #: Data types (``report_sequence_name`` values) that are run for every
 #: shot type in the production matrix. Per-factor comparisons that are
 #: not studying ``data_type`` restrict to this list to keep the source
 #: documents balanced across the other factors.
 FAIR_DATA_TYPES: tuple[str, ...] = (
     "all_docs_in_sequence",
+    PATIENT_AGGREGATED_SEQUENCE_NAME,
     "endo",
     "hist",
     "clinic_preceding",
@@ -250,6 +256,7 @@ THINKING_POOL_COLORS: dict[str, str] = {
 
 SEQUENCE_DISPLAY_NAMES: dict[str, str] = {
     "all_docs_in_sequence": "Preceding clinic letter / Endoscopy / Histology narrative order",
+    PATIENT_AGGREGATED_SEQUENCE_NAME: "Patient-level aggregate from document-level predictions",
     "all_docs_in_sequence_with_clinic_following": "Preceding clinic letter / Endoscopy / Histology / Following clinic letter narrative order",
     "all_docs_in_reverse_sequence": "Following clinic letter / Histology / Endoscopy / Preceding clinic letter narrative order",
     "endo_hist": "Endoscopy / Histology narrative order",

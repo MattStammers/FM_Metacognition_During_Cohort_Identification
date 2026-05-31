@@ -68,6 +68,12 @@ _SEQUENCE_DOCS: dict[str, tuple[str, ...]] = {
         "histology",
         "following_clinic",
     ),
+    "patient_aggregated_from_documents": (
+        "preceding_clinic",
+        "endoscopy",
+        "histology",
+        "following_clinic",
+    ),
     "all_docs_in_sequence_with_clinic_following": (
         "preceding_clinic",
         "endoscopy",

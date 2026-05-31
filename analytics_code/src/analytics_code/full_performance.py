@@ -20,6 +20,7 @@ from sklearn.metrics import f1_score, matthews_corrcoef, precision_score, recall
 from analytics_code.common import (
     FAIR_DATA_TYPES,
     FAIR_TEMPERATURES_NUMERIC,
+    PATIENT_AGGREGATED_SEQUENCE_NAME,
     ZERO_SHOT_LABEL,
     ensure_dir,
     format_factor_value,
@@ -405,7 +406,10 @@ def _is_primary_row(row: pd.Series) -> bool:
     """Apply the primary-configuration rule (used as a fallback)."""
     if str(row.get("shot_type")) != ZERO_SHOT_LABEL:
         return False
-    if str(row.get("report_sequence_name")) != "all_docs_in_sequence":
+    if str(row.get("report_sequence_name")) not in {
+        "all_docs_in_sequence",
+        PATIENT_AGGREGATED_SEQUENCE_NAME,
+    }:
         return False
     canon = str(row.get("model_canon"))
     expected = PRIMARY_TEMPERATURE_BY_CANON.get(canon)
