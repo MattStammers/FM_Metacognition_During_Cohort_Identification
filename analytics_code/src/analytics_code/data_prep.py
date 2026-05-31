@@ -18,6 +18,7 @@ import pandas as pd
 from analytics_code.common import (
     DATA_TYPE_DOCUMENT_SET,
     MULTI_DOC_DATA_TYPES,
+    PATIENT_AGGREGATED_SEQUENCE_NAME,
     SINGLE_DOC_DATA_TYPES,
     SINGLE_DOC_TYPE_MAP,
     canonicalize_model,
@@ -857,11 +858,38 @@ def _aggregate_patient_level_view(
     if "Complexity of Case" in out.columns and "complexity_score" in out.columns:
         out["Complexity of Case"] = out["complexity_score"]
 
-    # Reuse the production FAIR filters by assigning a single canonical
-    # context slug to the patient-level endpoint.
-    out["report_sequence_name"] = "all_docs_in_sequence"
+    # Reuse the production FAIR filters by assigning an explicit
+    # patient-aggregation context slug to the patient-level endpoint.
+    out["report_sequence_name"] = PATIENT_AGGREGATED_SEQUENCE_NAME
     if "experiment_name" in out.columns:
         out["experiment_name"] = "final_patient"
+    if "is_primary_configuration" in out.columns:
+        out["is_primary_configuration"] = False
+    if {"shot_type", "model_canon", "temperature"}.issubset(out.columns):
+        primary_temperature_by_canon = {
+            "mixtral7b": 0.75,
+            "m42_8b": 0.75,
+            "deepseek14b": 0.75,
+            "deepseek32b": 0.6,
+            "deepseek70b": 0.6,
+            "qwen32b": 0.6,
+            "gemma4_31b": 0.6,
+        }
+
+        def _is_primary_patient_row(row: pd.Series) -> bool:
+            if str(row.get("shot_type")) != "zero":
+                return False
+            canon = str(row.get("model_canon"))
+            expected = primary_temperature_by_canon.get(canon)
+            if expected is None:
+                return False
+            try:
+                temp_f = float(row.get("temperature"))
+            except (TypeError, ValueError):
+                return False
+            return abs(temp_f - expected) < 1e-6
+
+        out["is_primary_configuration"] = out.apply(_is_primary_patient_row, axis=1)
     if PATIENT_DOCUMENT_TRUTH in working.columns:
         out[PATIENT_DOCUMENT_TRUTH] = (
             grouped[PATIENT_DOCUMENT_TRUTH].first().to_numpy(dtype=float)
