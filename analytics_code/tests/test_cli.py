@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from analytics_code.cli import _validation_view_config, build_parser, main
+from analytics_code.cli import PIPELINE, _validation_view_config, build_parser, main
 
 # ---------------------------------------------------------------------------
 # helpers
@@ -68,6 +68,10 @@ def test_build_parser_run_validation_views_all_command(tmp_path: Path) -> None:
     parser = build_parser()
     args = parser.parse_args(["run-validation-views-all", "--config", str(config)])
     assert args.command == "run-validation-views-all"
+
+
+def test_pipeline_includes_tiered_performance() -> None:
+    assert [name for name, _ in PIPELINE][-1] == "tiered_performance"
 
 
 def test_build_parser_rejects_unknown_stage(tmp_path: Path) -> None:
