@@ -34,9 +34,9 @@ PIPELINE = (
     ("missingness_threshold", run_missingness_threshold),
     ("full_performance", run_full_performance),
     ("narrative_analysis", run_narrative_analysis),
+    ("tiered_performance", run_tiered_performance),
 )
 STAGE_FUNCTIONS = dict(PIPELINE)
-STAGE_FUNCTIONS["tiered_performance"] = run_tiered_performance
 
 
 def _document_level_config(
