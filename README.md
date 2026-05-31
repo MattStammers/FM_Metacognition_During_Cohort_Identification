@@ -4,7 +4,7 @@
 
 ## By Matt Stammers
 
-### Final Code Completed: 29/05/2026
+### Final Code Completed: 31/05/2026
 
 ## Purpose
 
@@ -413,6 +413,10 @@ finalised.
   or process environment) and are never committed to source.
 - Logs and generated outputs remain inside the workspace and are listed
   in `.gitignore`.
+
+## Corrections
+
+31/05/2026: added tiered validation matrix missing from original demo.
 
 ### Contributing
 

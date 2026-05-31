@@ -1,0 +1,75 @@
+{
+  "paths": {
+    "llm_batch_root": "../../python_client/outputs/chronology_runs/all_models_realistic_dummy_v1",
+    "human_reference": "./pseudonymised_dummy_reference_document_flags.csv",
+    "output_root": "../outputs/all_models_realistic_dummy_analysis_by_validation"
+  },
+  "data_prep": {
+    "batch_glob": ["**/batch_*.xlsx", "**/batch_*.parquet", "**/batch_*.csv"],
+    "id_column": "patient_id"
+  },
+  "analysis": {
+    "decision_threshold": 5,
+    "thresholds": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    "bootstrap_iterations": 1000,
+    "random_seed": 42
+  },
+  "runner_metadata": {
+    "mixtral_runner": {
+      "display_name": "mixtral7b_t0_75",
+      "temperature": 0.75
+    },
+    "m42_runner": {
+      "display_name": "m42_8b_t0_75",
+      "temperature": 0.75
+    },
+    "deepseek14_runner": {
+      "display_name": "deepseek14b_t0_75",
+      "temperature": 0.75
+    },
+    "deepseek32_runner": {
+      "display_name": "deepseek32b_t0_60",
+      "temperature": 0.6
+    },
+    "qwen32_runner": {
+      "display_name": "qwen32b_t0_60",
+      "temperature": 0.6
+    },
+    "gemma4_e2b_runner": {
+      "display_name": "gemma4_e2b_t1_00",
+      "temperature": 1.0
+    },
+    "gemma4_e4b_runner": {
+      "display_name": "gemma4_e4b_t1_00",
+      "temperature": 1.0
+    },
+    "gemma4_26b_a4b_runner": {
+      "display_name": "gemma4_26b_a4b_t1_00",
+      "temperature": 1.0
+    },
+    "gemma4_31b_runner": {
+      "display_name": "gemma4_31b_t1_00",
+      "temperature": 1.0
+    }
+  },
+  "model_mapping": {
+    "mixtral7b_t0_75": "mixtral7b",
+    "m42_8b_t0_75": "m42_8b",
+    "deepseek14b_t0_75": "deepseek14b",
+    "deepseek32b_t0_60": "deepseek32b",
+    "qwen32b_t0_60": "qwen32b",
+    "gemma4_e2b_t1_00": "gemma4_e2b",
+    "gemma4_e4b_t1_00": "gemma4_e4b",
+    "gemma4_26b_a4b_t1_00": "gemma4_26b_a4b",
+    "gemma4_31b_t1_00": "gemma4_31b",
+    "mixtral_runner": "mixtral7b",
+    "m42_runner": "m42_8b",
+    "deepseek14_runner": "deepseek14b",
+    "deepseek32_runner": "deepseek32b",
+    "qwen32_runner": "qwen32b",
+    "gemma4_e2b_runner": "gemma4_e2b",
+    "gemma4_e4b_runner": "gemma4_e4b",
+    "gemma4_26b_a4b_runner": "gemma4_26b_a4b",
+    "gemma4_31b_runner": "gemma4_31b"
+  }
+}

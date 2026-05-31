@@ -11,10 +11,12 @@
 #       writes to ``<output_root>_document_level_complete``
 #       (sensitivity variant: restricts to rows whose relevant
 #       document markers are all present)
+#   * validation-view endpoint runs        -- ``run-validation-views-all``
+#       writes to ``<output_root>/{Document,Cumulative,Final,Doc2Patient}``
 #
-# All three passes share the same source data and are executed
-# sequentially here so the published outputs always include the
-# primary plus both sensitivity views.
+# All passes share the same source data and are executed sequentially
+# here so the published outputs always include the primary,
+# sensitivity, and validation-view endpoint outputs.
 # ---------------------------------------------------------------------------
 set -euo pipefail
 
@@ -46,8 +48,10 @@ cd "$ROOT_DIR/analytics_code"
 "$PYTHON_BIN" -m analytics_code run-all --config "$CONFIG_PATH"
 "$PYTHON_BIN" -m analytics_code run-document-level-all --config "$CONFIG_PATH"
 "$PYTHON_BIN" -m analytics_code run-document-level-complete-all --config "$CONFIG_PATH"
+"$PYTHON_BIN" -m analytics_code run-validation-views-all --config "$CONFIG_PATH"
 
 echo "Analytics pipeline completed using config: $CONFIG_PATH"
 echo "Patient-level outputs:                    <output_root>"
 echo "Document-level outputs:                   <output_root>_document_level"
 echo "Document-level (complete-marker) outputs: <output_root>_document_level_complete"
+echo "Validation-view outputs:                  <output_root>/{Document,Cumulative,Final,Doc2Patient}"

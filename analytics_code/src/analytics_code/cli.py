@@ -24,6 +24,7 @@ from analytics_code.dropout_analysis import run_dropout_analysis
 from analytics_code.full_performance import run_full_performance
 from analytics_code.missingness_threshold import run_missingness_threshold
 from analytics_code.narrative_analysis import run_narrative_analysis
+from analytics_code.tiered_performance import run_tiered_performance
 
 # Ordered pipeline of stages. The keys are the user-facing CLI stage names
 # and double as the output sub-directory names under ``paths.output_root``.
@@ -35,6 +36,7 @@ PIPELINE = (
     ("narrative_analysis", run_narrative_analysis),
 )
 STAGE_FUNCTIONS = dict(PIPELINE)
+STAGE_FUNCTIONS["tiered_performance"] = run_tiered_performance
 
 
 def _document_level_config(
@@ -49,6 +51,34 @@ def _document_level_config(
     paths = dict(raw.get("paths", {}))
     output_root = Path(paths["output_root"])
     paths["output_root"] = str(output_root.parent / f"{output_root.name}{suffix}")
+    raw["paths"] = paths
+    return type(config)(raw=raw, config_path=config.config_path)
+
+
+def _validation_view_config(
+    config,
+    *,
+    level: str,
+    top_level_folder: str,
+    truth_mode_value: str,
+):
+    """Clone ``config`` so the pipeline runs into one validation-level subtree.
+
+    The root output tree remains the user's original dummy-analysis
+    folder. Each validation view gets its own top-level directory
+    beneath it (``Document``, ``Cumulative``, ``Final``,
+    ``Doc2Patient``), and inside that directory the original stage
+    folders (``data_prep``, ``full_performance``, etc.) are recreated.
+    """
+    raw = deepcopy(config.raw)
+    analysis = dict(raw.get("analysis", {}))
+    analysis["validation_level"] = level
+    analysis["truth_mode"] = truth_mode_value
+    raw["analysis"] = analysis
+
+    paths = dict(raw.get("paths", {}))
+    output_root = Path(paths["output_root"])
+    paths["output_root"] = str(output_root / top_level_folder)
     raw["paths"] = paths
     return type(config)(raw=raw, config_path=config.config_path)
 
@@ -86,6 +116,16 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     run_doc_complete.add_argument("--config", required=True)
+
+    run_validation_views = subparsers.add_parser(
+        "run-validation-views-all",
+        help=(
+            "Run the existing analysis pipeline into top-level Document, "
+            "Cumulative, Final, and Doc2Patient folders beneath the "
+            "configured output root"
+        ),
+    )
+    run_validation_views.add_argument("--config", required=True)
 
     run_stage = subparsers.add_parser("run-stage", help="Run one analysis stage")
     run_stage.add_argument("--config", required=True)
@@ -138,6 +178,24 @@ def main(argv: list[str] | None = None) -> int:
         )
         for _, fn in PIPELINE:
             fn(document_config)
+        return 0
+
+    if args.command == "run-validation-views-all":
+        validation_runs = (
+            ("document", "Document", "document"),
+            ("cumulative", "Cumulative", "document"),
+            ("final", "Final", "patient"),
+            ("doc2patient", "Doc2Patient", "patient"),
+        )
+        for level, folder, mode in validation_runs:
+            derived = _validation_view_config(
+                config,
+                level=level,
+                top_level_folder=folder,
+                truth_mode_value=mode,
+            )
+            for _, fn in PIPELINE:
+                fn(derived)
         return 0
 
     if args.command == "run-stage":

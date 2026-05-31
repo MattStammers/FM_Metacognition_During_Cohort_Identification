@@ -12,6 +12,9 @@ from analytics_code.config import AnalysisConfig
 from analytics_code.data_prep import (
     DOCUMENT_SEQUENCE_TRUTH_LENIENT,
     DOCUMENT_SEQUENCE_TRUTH_STRICT,
+    PATIENT_DOCUMENT_TRUTH,
+    _aggregate_patient_level_view,
+    _apply_validation_level_view,
     _attach_document_sequence_truth_columns,
     _extract_prompt_sections,
     _infer_temperature,
@@ -147,6 +150,11 @@ def test_infer_temperature_from_three_digit_suffix() -> None:
     assert result == pytest.approx(0.60)
 
 
+def test_infer_temperature_from_runner_suffix_before_trailing_token() -> None:
+    assert _infer_temperature("deepseek14_t05_runner", {}) == pytest.approx(0.50)
+    assert _infer_temperature("mixtral_t1_runner", {}) == pytest.approx(1.00)
+
+
 def test_infer_temperature_returns_none_when_no_match() -> None:
     assert _infer_temperature("no_temp_here", {}) is None
 
@@ -240,6 +248,27 @@ def test_normalize_chronology_outputs_adds_model_canon(tmp_path: Path) -> None:
     assert result["model_canon"].iloc[0] == "MyModel"
 
 
+def test_normalize_chronology_outputs_standardizes_unmapped_runner_labels(
+    tmp_path: Path,
+) -> None:
+    config = _make_config(tmp_path)
+    frame = pd.DataFrame(
+        {
+            "patient_id": ["p1"],
+            "experiment_name": ["zero_shot_endo"],
+            "runner_name": ["deepseek14_t05_runner"],
+            "model_Zero_shot_Full_Response_1": ["resp1"],
+            "model_Zero_shot_Json_Response_1": [
+                '{"Likelihood of IBD": 7, "Certainty Level": 6, "Complexity of Case": 5}'
+            ],
+        }
+    )
+    result = normalize_chronology_outputs(frame, config)
+    assert result["model_canon"].iloc[0] == "deepseek14b"
+    assert result["temperature"].iloc[0] == pytest.approx(0.50)
+    assert result["display_model"].iloc[0] == "deepseek14b_t0_50"
+
+
 def test_normalize_chronology_outputs_parses_json_response(tmp_path: Path) -> None:
     config = _make_config(tmp_path)
     frame = _minimal_batch_frame()
@@ -288,3 +317,119 @@ def test_attach_document_sequence_truth_columns_emits_lenient_and_strict() -> No
     assert strict.iloc[0] == 1.0
     assert pd.isna(strict.iloc[1])
     assert strict.iloc[2] == 1.0
+
+
+def test_aggregate_patient_level_view_preserves_max_likelihood_bucket() -> None:
+    frame = pd.DataFrame(
+        {
+            "patient_id": ["p1", "p1"],
+            "runner_name": ["mixtral_runner", "mixtral_runner"],
+            "model": ["mixtral_runner", "mixtral_runner"],
+            "display_model": ["mixtral7b_t0_75", "mixtral7b_t0_75"],
+            "model_canon": ["mixtral7b", "mixtral7b"],
+            "shot_type": ["zero", "zero"],
+            "temperature": [0.75, 0.75],
+            "likelihood_score": [3.0, 6.0],
+            "certainty_score": [4.0, 8.0],
+            "complexity_score": [2.0, 5.0],
+            PATIENT_DOCUMENT_TRUTH: [1.0, 1.0],
+            "Patient_Has_IBD": [0.0, 0.0],
+            "ground_truth": [0.0, 0.0],
+        }
+    )
+
+    out = _aggregate_patient_level_view(frame, final_truth=True)
+
+    assert len(out) == 1
+    assert out["likelihood_score"].iloc[0] == pytest.approx(6.0)
+    assert out["certainty_score"].iloc[0] == pytest.approx(8.0)
+    assert out["complexity_score"].iloc[0] == pytest.approx(5.0)
+    assert out["report_sequence_name"].iloc[0] == "all_docs_in_sequence"
+    assert out["Patient_Has_IBD"].iloc[0] == pytest.approx(1.0)
+    assert out["ground_truth"].iloc[0] == pytest.approx(1.0)
+
+
+def test_aggregate_patient_level_view_uses_single_document_rows_only() -> None:
+    frame = pd.DataFrame(
+        {
+            "patient_id": ["p1", "p1", "p1"],
+            "runner_name": ["mixtral_runner", "mixtral_runner", "mixtral_runner"],
+            "model": ["mixtral_runner", "mixtral_runner", "mixtral_runner"],
+            "display_model": ["mixtral7b_t0_75", "mixtral7b_t0_75", "mixtral7b_t0_75"],
+            "model_canon": ["mixtral7b", "mixtral7b", "mixtral7b"],
+            "shot_type": ["zero", "zero", "zero"],
+            "temperature": [0.75, 0.75, 0.75],
+            "report_sequence_name": ["hist", "endo", "all_docs_in_sequence"],
+            "likelihood_score": [4.0, 6.0, 10.0],
+            "certainty_score": [5.0, 6.0, 9.0],
+            "complexity_score": [3.0, 4.0, 8.0],
+            PATIENT_DOCUMENT_TRUTH: [1.0, 1.0, 1.0],
+            "Patient_Has_IBD": [1.0, 1.0, 1.0],
+            "ground_truth": [1.0, 1.0, 1.0],
+        }
+    )
+
+    out = _aggregate_patient_level_view(frame, final_truth=False)
+
+    assert len(out) == 1
+    assert out["likelihood_score"].iloc[0] == pytest.approx(6.0)
+    assert out["certainty_score"].iloc[0] == pytest.approx(6.0)
+    assert out["complexity_score"].iloc[0] == pytest.approx(4.0)
+
+
+def test_aggregate_patient_level_view_doc2patient_materializes_patient_truth() -> None:
+    frame = pd.DataFrame(
+        {
+            "patient_id": ["p1", "p1"],
+            "runner_name": ["mixtral_runner", "mixtral_runner"],
+            "model": ["mixtral_runner", "mixtral_runner"],
+            "display_model": ["mixtral7b_t0_75", "mixtral7b_t0_75"],
+            "model_canon": ["mixtral7b", "mixtral7b"],
+            "shot_type": ["zero", "zero"],
+            "temperature": [0.75, 0.75],
+            "report_sequence_name": ["all_docs_in_sequence", "all_docs_in_sequence"],
+            "likelihood_score": [6.0, 8.0],
+            "certainty_score": [7.0, 8.0],
+            "complexity_score": [4.0, 5.0],
+            PATIENT_DOCUMENT_TRUTH: [1.0, 1.0],
+            "ground_truth": [0.0, 0.0],
+        }
+    )
+
+    out = _aggregate_patient_level_view(frame, final_truth=False)
+
+    assert len(out) == 1
+    assert out["Patient_Has_IBD"].iloc[0] == pytest.approx(0.0)
+    assert out["ground_truth"].iloc[0] == pytest.approx(0.0)
+
+
+def test_apply_validation_level_view_builds_cumulative_from_single_doc_predictions() -> None:
+    config = _make_config(
+        Path("."),
+        extra_raw={"analysis": {"validation_level": "cumulative"}},
+    )
+    frame = pd.DataFrame(
+        {
+            "patient_id": ["p1", "p1", "p1"],
+            "runner_name": ["mixtral_runner", "mixtral_runner", "mixtral_runner"],
+            "model": ["mixtral_runner", "mixtral_runner", "mixtral_runner"],
+            "display_model": ["mixtral7b_t0_75", "mixtral7b_t0_75", "mixtral7b_t0_75"],
+            "model_canon": ["mixtral7b", "mixtral7b", "mixtral7b"],
+            "shot_type": ["zero", "zero", "zero"],
+            "temperature": [0.75, 0.75, 0.75],
+            "report_sequence_name": ["hist", "endo", "all_docs_in_sequence"],
+            "likelihood_score": [4.0, 7.0, 1.0],
+            "certainty_score": [5.0, 6.0, 9.0],
+            "complexity_score": [3.0, 4.0, 8.0],
+        }
+    )
+
+    out = _apply_validation_level_view(frame, config)
+
+    target = out[out["report_sequence_name"] == "all_docs_in_sequence"].reset_index(
+        drop=True
+    )
+    assert len(target) == 1
+    assert target["likelihood_score"].iloc[0] == pytest.approx(7.0)
+    assert target["certainty_score"].iloc[0] == pytest.approx(6.0)
+    assert target["complexity_score"].iloc[0] == pytest.approx(4.0)

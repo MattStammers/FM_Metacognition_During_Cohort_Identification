@@ -72,6 +72,129 @@ FAIR_DATA_TYPES: tuple[str, ...] = (
     "clinic_following",
 )
 
+# ---------------------------------------------------------------------------
+# Tier definitions for the published "Document / Cumulative / Final /
+# Doc2Patient" analysis. In this repository we are not retraining the
+# open-source models; instead we validate existing LLM outputs while
+# matching the same endpoint aggregation and outcome-centering logic.
+# ---------------------------------------------------------------------------
+#
+# Document tier: single-physician-marker rows. Each row corresponds to
+# one report type and is scored against the matching physician flag.
+SINGLE_DOC_DATA_TYPES: tuple[str, ...] = (
+    "hist",
+    "endo",
+    "clinic_preceding",
+    "clinic_following",
+)
+
+#: Mapping from canonical document type to the physician-marker column
+#: in the human reference workbook. The dummy reference file
+#: (``pseudonymised_dummy_reference_document_flags.csv``) provides the
+#: canonical column names; real-data configs can override via
+#: ``analysis.document_flag_columns``.
+DOC_FLAG_COLUMNS: dict[str, str] = {
+    "histology": "histology_ibd_flag",
+    "endoscopy": "endoscopy_ibd_flag",
+    "preceding_clinic": "preceding_clinic_ibd_flag",
+    "following_clinic": "following_clinic_ibd_flag",
+}
+
+#: Mapping from each single-doc ``report_sequence_name`` value to the
+#: canonical doc type that row represents. Used by the Document tier
+#: to pick the right physician marker per row.
+SINGLE_DOC_TYPE_MAP: dict[str, str] = {
+    "hist": "histology",
+    "endo": "endoscopy",
+    "clinic_preceding": "preceding_clinic",
+    "clinic_following": "following_clinic",
+}
+
+#: Explicit data_type -> set of physician-marker doc types shown in
+#: that prompt. Drives the Cumulative-tier reference (logical OR over
+#: the documents actually shown to the model in that data_type). The
+#: three-document ``*_clinic*`` sequences in the dummy prompt configs
+#: include a single "CLINIC LETTER" slot but the methodology treats
+#: that as evidence from either clinic letter, so both clinic markers
+#: are OR'd (matches the "any IBD evidence in any linked doc" intent).
+DATA_TYPE_DOCUMENT_SET: dict[str, tuple[str, ...]] = {
+    # Single-doc data types -- one physician marker each.
+    "hist": ("histology",),
+    "endo": ("endoscopy",),
+    "clinic_preceding": ("preceding_clinic",),
+    "clinic_following": ("following_clinic",),
+    # Two-doc data types.
+    "endo_hist": ("endoscopy", "histology"),
+    "hist_endo": ("histology", "endoscopy"),
+    "clinic_both": ("preceding_clinic", "following_clinic"),
+    # Three-doc data types -- single "CLINIC LETTER" slot maps to
+    # OR(preceding, following) per the methodology.
+    "clinic_endo_hist": (
+        "preceding_clinic",
+        "following_clinic",
+        "endoscopy",
+        "histology",
+    ),
+    "endo_hist_clinic": (
+        "endoscopy",
+        "histology",
+        "preceding_clinic",
+        "following_clinic",
+    ),
+    "hist_endo_clinic": (
+        "histology",
+        "endoscopy",
+        "preceding_clinic",
+        "following_clinic",
+    ),
+    "hist_clinic_endo": (
+        "histology",
+        "preceding_clinic",
+        "following_clinic",
+        "endoscopy",
+    ),
+    # Four-doc / full bundle data types.
+    "all_docs_in_sequence": (
+        "preceding_clinic",
+        "endoscopy",
+        "histology",
+        "following_clinic",
+    ),
+    "all_docs_in_reverse_sequence": (
+        "following_clinic",
+        "histology",
+        "endoscopy",
+        "preceding_clinic",
+    ),
+    "jumbled": (
+        "following_clinic",
+        "endoscopy",
+        "preceding_clinic",
+        "histology",
+    ),
+}
+
+#: Cumulative-tier data types -- everything in
+#: :data:`DATA_TYPE_DOCUMENT_SET` that is not a single-doc row.
+MULTI_DOC_DATA_TYPES: tuple[str, ...] = tuple(
+    dt for dt in DATA_TYPE_DOCUMENT_SET if dt not in SINGLE_DOC_DATA_TYPES
+)
+
+
+def tier_of(data_type: object) -> str:
+    """Classify ``data_type`` into ``"document"``, ``"cumulative"`` or ``"unknown"``.
+
+    Used by :mod:`analytics_code.tiered_performance` to route each row
+    of the merged outputs to the right tier.
+    """
+    key = str(data_type).strip().lower() if data_type is not None else ""
+    if key in SINGLE_DOC_DATA_TYPES:
+        return "document"
+    if key in DATA_TYPE_DOCUMENT_SET:
+        return "cumulative"
+    return "unknown"
+
+
 PUBLICATION_DPI: int = 600
 
 MODEL_DISPLAY_NAMES: dict[str, str] = {
@@ -461,7 +584,7 @@ def save_figure(path: Path) -> Path:
     """
     ensure_dir(path.parent)
     plt.tight_layout()
-    plt.savefig(path, dpi=PUBLICATION_DPI, bbox_inches="tight")
+    plt.savefig(path, dpi=PUBLICATION_DPI, bbox_inches="tight", pad_inches=0.2)
     plt.close()
     LOGGER.info("Saved figure to %s", path)
     return path
@@ -487,4 +610,29 @@ def canonicalize_model(model_name: str, mapping: dict[str, str]) -> str:
     unknown names are returned unchanged after stripping whitespace.
     """
     stripped = str(model_name).strip()
-    return mapping.get(stripped, stripped)
+    if stripped in mapping:
+        return mapping[stripped]
+
+    lowered = stripped.lower()
+    lowered_mapping = {
+        str(key).strip().lower(): value for key, value in mapping.items()
+    }
+    if lowered in lowered_mapping:
+        return lowered_mapping[lowered]
+
+    family_patterns: tuple[tuple[str, str], ...] = (
+        (r"deepseek.*14", "deepseek14b"),
+        (r"deepseek.*32", "deepseek32b"),
+        (r"deepseek.*70", "deepseek70b"),
+        (r"mixtral", "mixtral7b"),
+        (r"m42", "m42_8b"),
+        (r"qwen.*32", "qwen32b"),
+        (r"gemma.*31", "gemma4_31b"),
+        (r"gemma.*26", "gemma4_26b_a4b"),
+        (r"gemma.*e2b", "gemma4_e2b"),
+        (r"gemma.*e4b", "gemma4_e4b"),
+    )
+    for pattern, canonical in family_patterns:
+        if re.search(pattern, lowered):
+            return canonical
+    return stripped

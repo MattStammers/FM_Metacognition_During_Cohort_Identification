@@ -143,6 +143,12 @@ def test_canonicalize_model_strips_whitespace_before_lookup() -> None:
     assert canonicalize_model("  model_a  ", mapping) == "Model A"
 
 
+def test_canonicalize_model_falls_back_to_known_family_patterns() -> None:
+    assert canonicalize_model("mixtral_t1_runner", {}) == "mixtral7b"
+    assert canonicalize_model("deepseek14_t05_runner", {}) == "deepseek14b"
+    assert canonicalize_model("m42_t1_runner", {}) == "m42_8b"
+
+
 def test_format_sequence_label_shortens_clinical_context_labels() -> None:
     assert (
         format_sequence_label("all_docs_in_sequence")

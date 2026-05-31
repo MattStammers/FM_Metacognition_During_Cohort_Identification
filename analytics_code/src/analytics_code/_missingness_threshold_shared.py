@@ -96,7 +96,10 @@ def _save_multi(fig, stem: Path) -> None:
     apply_publication_style()
     for ext in ("png", "pdf", "svg"):
         fig.savefig(
-            stem.with_suffix(f".{ext}"), dpi=PUBLICATION_DPI, bbox_inches="tight"
+            stem.with_suffix(f".{ext}"),
+            dpi=PUBLICATION_DPI,
+            bbox_inches="tight",
+            pad_inches=0.2,
         )
     plt.close(fig)
 

@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from analytics_code.cli import build_parser, main
+from analytics_code.cli import _validation_view_config, build_parser, main
 
 # ---------------------------------------------------------------------------
 # helpers
@@ -63,6 +63,13 @@ def test_build_parser_run_stage_command(tmp_path: Path) -> None:
     assert args.stage == "data_prep"
 
 
+def test_build_parser_run_validation_views_all_command(tmp_path: Path) -> None:
+    config = _write_minimal_config(tmp_path)
+    parser = build_parser()
+    args = parser.parse_args(["run-validation-views-all", "--config", str(config)])
+    assert args.command == "run-validation-views-all"
+
+
 def test_build_parser_rejects_unknown_stage(tmp_path: Path) -> None:
     config = _write_minimal_config(tmp_path)
     parser = build_parser()
@@ -88,3 +95,19 @@ def test_main_validate_config_raises_on_invalid_config(tmp_path: Path) -> None:
     bad_config.write_text("{invalid json}", encoding="utf-8")
     with pytest.raises(Exception):
         main(["validate-config", "--config", str(bad_config)])
+
+
+def test_validation_view_config_nests_under_named_folder(tmp_path: Path) -> None:
+    config_path = _write_minimal_config(tmp_path)
+    from analytics_code.config import load_config
+
+    config = load_config(config_path)
+    derived = _validation_view_config(
+        config,
+        level="final",
+        top_level_folder="Final",
+        truth_mode_value="patient",
+    )
+    assert derived.analysis["validation_level"] == "final"
+    assert derived.analysis["truth_mode"] == "patient"
+    assert derived.paths["output_root"] == (tmp_path / "outputs" / "Final").resolve()
