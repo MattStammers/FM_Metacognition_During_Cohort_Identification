@@ -16,8 +16,10 @@ import numpy as np
 import pandas as pd
 
 from analytics_code.common import (
+    DATA_TYPE_DOCUMENT_SET,
     MULTI_DOC_DATA_TYPES,
     SINGLE_DOC_DATA_TYPES,
+    SINGLE_DOC_TYPE_MAP,
     canonicalize_model,
     ensure_dir,
     write_dataframe,
@@ -640,20 +642,138 @@ def _concat_unique_text(values: pd.Series) -> str:
     return "\n\n".join(seen)
 
 
+def _document_component_rows(frame: pd.DataFrame) -> pd.DataFrame:
+    """Return the single-document rows used for document-derived aggregation.
+
+    We are not reproducing model training here. Instead, we reshape the
+    existing LLM outputs so downstream validation uses the same *end
+    predictor handling* convention as the open-source pipelines: build
+    higher-order endpoints from document-level predictions rather than
+    from direct multi-document FM prompt rows. When no single-document
+    rows are available we fall back to an empty frame so callers can
+    decide how to handle that config.
+    """
+    if frame.empty or "report_sequence_name" not in frame.columns:
+        return frame.iloc[0:0].copy()
+    working = frame[frame["report_sequence_name"].isin(SINGLE_DOC_DATA_TYPES)].copy()
+    if working.empty:
+        return working
+    working["__bucket"] = clean_likelihood(working["likelihood_score"])
+    return working
+
+
+def _winner_row(subset: pd.DataFrame) -> pd.Series:
+    """Return the first row attaining the maximum cleaned likelihood bucket."""
+    winner_idx = subset["__bucket"].fillna(-1).idxmax()
+    return subset.loc[winner_idx].copy()
+
+
+def _build_document_derived_cumulative_view(frame: pd.DataFrame) -> pd.DataFrame:
+    """Construct cumulative rows from single-document prediction rows.
+
+    This aligns the *endpoint predictor construction* with the
+    open-source comparison repo: a cumulative prediction is the max/OR
+    over the component document-level predictions, not the FM's direct
+    score on a multi-document prompt row.
+    """
+    working = _document_component_rows(frame)
+    if working.empty:
+        return frame[frame["report_sequence_name"].isin(MULTI_DOC_DATA_TYPES)].copy()
+
+    group_cols = [
+        c
+        for c in (
+            "patient_id",
+            "study_id",
+            "PatientID",
+            "runner_name",
+            "model",
+            "display_model",
+            "model_canon",
+            "shot_type",
+            "temperature",
+        )
+        if c in working.columns
+    ]
+    doc_type_to_sequence = {value: key for key, value in SINGLE_DOC_TYPE_MAP.items()}
+    rows: list[pd.Series] = []
+
+    grouped = (
+        working.groupby(group_cols, dropna=False) if group_cols else [((), working)]
+    )
+    for _, group in grouped:
+        for data_type in MULTI_DOC_DATA_TYPES:
+            component_sequences = [
+                doc_type_to_sequence[doc_type]
+                for doc_type in DATA_TYPE_DOCUMENT_SET.get(data_type, ())
+                if doc_type in doc_type_to_sequence
+            ]
+            subset = group[
+                group["report_sequence_name"].isin(component_sequences)
+            ].copy()
+            if subset.empty:
+                continue
+            winner = _winner_row(subset)
+            winner["report_sequence_name"] = data_type
+            bucket = subset["__bucket"].max()
+            winner["likelihood_score"] = bucket
+            if "Likelihood of IBD" in winner.index:
+                winner["Likelihood of IBD"] = bucket
+            if "json_parse_success" in subset.columns:
+                winner["json_parse_success"] = int(
+                    pd.to_numeric(subset["json_parse_success"], errors="coerce")
+                    .fillna(0)
+                    .max()
+                )
+            if "json_schema_valid" in subset.columns:
+                winner["json_schema_valid"] = int(
+                    pd.to_numeric(subset["json_schema_valid"], errors="coerce")
+                    .fillna(0)
+                    .max()
+                )
+            if "truncated" in subset.columns:
+                winner["truncated"] = bool(subset["truncated"].fillna(False).any())
+            if "response_tokens" in subset.columns:
+                winner["response_tokens"] = int(
+                    pd.to_numeric(subset["response_tokens"], errors="coerce")
+                    .fillna(0)
+                    .sum()
+                )
+            for text_col in (
+                "full_response",
+                "json_response",
+                "payload",
+                "clues_text",
+                "reasoning_text",
+                "Title",
+                "Features",
+                "Combined_Content",
+                "result_report",
+            ):
+                if text_col in subset.columns:
+                    winner[text_col] = _concat_unique_text(subset[text_col])
+            rows.append(winner)
+
+    if not rows:
+        return frame.iloc[0:0].copy()
+    out = pd.DataFrame(rows)
+    return out.drop(columns=[c for c in ("__bucket",) if c in out.columns])
+
+
 def _aggregate_patient_level_view(
     frame: pd.DataFrame, *, final_truth: bool = False
 ) -> pd.DataFrame:
     """Collapse rows to one patient-level record per model/shot/temperature.
 
-    This operationalises the methodology's Final / Doc2Patient unit of
-    analysis: one row per ``(patient_id, model_canon, shot_type,
-    temperature)`` where the prediction is the logical OR over every
-    linked-row prediction for that patient.
+    This operationalises the Final / Doc2Patient endpoint handling used
+    for validation in this repo: one row per ``(patient_id, model_canon,
+    shot_type, temperature)`` where the prediction is the logical OR
+    over the relevant document-derived row predictions for that patient.
 
     ``final_truth=True`` rewrites ``Patient_Has_IBD`` / ``ground_truth``
-    to the document-derived patient endpoint so downstream stages score
-    against the Final_* reference standard. ``False`` keeps the chart-
-    verified patient label for the Doc2Patient secondary endpoint.
+    to the document-derived patient endpoint so downstream stages are
+    centred on the Final_* reference standard. ``False`` keeps the
+    chart-verified patient label for the Doc2Patient secondary endpoint.
     """
     if frame.empty or "likelihood_score" not in frame.columns:
         return frame
@@ -664,25 +784,14 @@ def _aggregate_patient_level_view(
     if patient_col is None:
         return frame
 
-    # Match the document-to-patient boundary in the reference pipelines:
-    # patient-level outcomes are collapsed from the canonical cumulative
-    # context rather than from the mixed pool of single-document rows or
-    # alternative cumulative prompt orderings. Prefer the production
-    # ``all_docs_in_sequence`` view when it exists; otherwise fall back to
-    # any multi-document context.
-    working = frame.copy()
-    if "report_sequence_name" in working.columns:
-        canonical = working[
-            working["report_sequence_name"].eq("all_docs_in_sequence")
-        ].copy()
-        if not canonical.empty:
-            working = canonical
-        else:
-            cumulative = working[
-                working["report_sequence_name"].isin(MULTI_DOC_DATA_TYPES)
-            ].copy()
-            if not cumulative.empty:
-                working = cumulative
+    # Match the same end predictor-handling logic as the open-source
+    # comparison repo while staying in an LLM-output validation setting:
+    # patient-level predictors are collapsed from document-level
+    # predictions, not from direct multi-document FM prompt rows.
+    working = _document_component_rows(frame)
+    if working.empty:
+        working = frame.copy()
+        working["__bucket"] = clean_likelihood(working["likelihood_score"])
 
     group_cols = [
         patient_col,
@@ -699,49 +808,54 @@ def _aggregate_patient_level_view(
             if c in frame.columns
         ],
     ]
-    bucket = clean_likelihood(working["likelihood_score"])
-    working["__row_pred"] = bucket.fillna(-1).ge(5).astype(int)
-    working["__bucket"] = bucket
     grouped = working.groupby(group_cols, dropna=False)
-    out = grouped.first().reset_index()
-    out["likelihood_score"] = grouped["__bucket"].max().to_numpy(dtype=float)
-    if "Likelihood of IBD" in out.columns:
-        out["Likelihood of IBD"] = out["likelihood_score"]
-    if "certainty_score" in working.columns:
-        out["certainty_score"] = grouped["certainty_score"].max().to_numpy(dtype=float)
+    rows: list[pd.Series] = []
+    for _, subset in grouped:
+        winner = _winner_row(subset)
+        bucket = subset["__bucket"].max()
+        winner["likelihood_score"] = bucket
+        if "Likelihood of IBD" in winner.index:
+            winner["Likelihood of IBD"] = bucket
+        if "json_parse_success" in subset.columns:
+            winner["json_parse_success"] = int(
+                pd.to_numeric(subset["json_parse_success"], errors="coerce")
+                .fillna(0)
+                .max()
+            )
+        if "json_schema_valid" in subset.columns:
+            winner["json_schema_valid"] = int(
+                pd.to_numeric(subset["json_schema_valid"], errors="coerce")
+                .fillna(0)
+                .max()
+            )
+        if "truncated" in subset.columns:
+            winner["truncated"] = bool(subset["truncated"].fillna(False).any())
+        if "response_tokens" in subset.columns:
+            winner["response_tokens"] = int(
+                pd.to_numeric(subset["response_tokens"], errors="coerce")
+                .fillna(0)
+                .sum()
+            )
+        for text_col in (
+            "full_response",
+            "json_response",
+            "payload",
+            "clues_text",
+            "reasoning_text",
+            "Title",
+            "Features",
+            "Combined_Content",
+            "result_report",
+        ):
+            if text_col in subset.columns:
+                winner[text_col] = _concat_unique_text(subset[text_col])
+        rows.append(winner)
+
+    out = pd.DataFrame(rows).reset_index(drop=True)
     if "Certainty Level" in out.columns and "certainty_score" in out.columns:
         out["Certainty Level"] = out["certainty_score"]
-    if "complexity_score" in working.columns:
-        out["complexity_score"] = (
-            grouped["complexity_score"].max().to_numpy(dtype=float)
-        )
     if "Complexity of Case" in out.columns and "complexity_score" in out.columns:
         out["Complexity of Case"] = out["complexity_score"]
-    if "json_parse_success" in working.columns:
-        out["json_parse_success"] = (
-            grouped["json_parse_success"].max().to_numpy(dtype=int)
-        )
-    if "json_schema_valid" in working.columns:
-        out["json_schema_valid"] = (
-            grouped["json_schema_valid"].max().to_numpy(dtype=int)
-        )
-    if "truncated" in working.columns:
-        out["truncated"] = grouped["truncated"].any().to_numpy(dtype=bool)
-    if "response_tokens" in working.columns:
-        out["response_tokens"] = grouped["response_tokens"].sum().to_numpy(dtype=int)
-    for text_col in (
-        "full_response",
-        "json_response",
-        "payload",
-        "clues_text",
-        "reasoning_text",
-        "Title",
-        "Features",
-        "Combined_Content",
-        "result_report",
-    ):
-        if text_col in working.columns:
-            out[text_col] = grouped[text_col].apply(_concat_unique_text).to_numpy()
 
     # Reuse the production FAIR filters by assigning a single canonical
     # context slug to the patient-level endpoint.
@@ -778,7 +892,7 @@ def _apply_validation_level_view(
     if level == "document":
         return frame[frame["report_sequence_name"].isin(SINGLE_DOC_DATA_TYPES)].copy()
     if level == "cumulative":
-        return frame[frame["report_sequence_name"].isin(MULTI_DOC_DATA_TYPES)].copy()
+        return _build_document_derived_cumulative_view(frame)
     if level == "final":
         return _aggregate_patient_level_view(frame, final_truth=True)
     if level == "doc2patient":

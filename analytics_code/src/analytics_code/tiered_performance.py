@@ -1,6 +1,9 @@
 """Tiered performance stage (Document / Cumulative / Final / Doc2Patient).
 
-Implements the published "Table 3.2.4-1" analysis:
+Implements the published endpoint framing for validation of existing LLM
+outputs. This is not an identical reproduction of the training workflow
+from the open-source IBD models repo; it aligns the end predictor
+handling and outcome-centering logic:
 
 * ``Document_*`` -- one row per single-doc data type
   (``hist``, ``endo``, ``clinic_preceding``, ``clinic_following``);

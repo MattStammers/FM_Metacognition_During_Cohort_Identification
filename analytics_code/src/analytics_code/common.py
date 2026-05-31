@@ -74,7 +74,9 @@ FAIR_DATA_TYPES: tuple[str, ...] = (
 
 # ---------------------------------------------------------------------------
 # Tier definitions for the published "Document / Cumulative / Final /
-# Doc2Patient" analysis (mirrors Table 3.2.4-1 of the paper).
+# Doc2Patient" analysis. In this repository we are not retraining the
+# open-source models; instead we validate existing LLM outputs while
+# matching the same endpoint aggregation and outcome-centering logic.
 # ---------------------------------------------------------------------------
 #
 # Document tier: single-physician-marker rows. Each row corresponds to
