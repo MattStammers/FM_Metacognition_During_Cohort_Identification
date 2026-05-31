@@ -47,11 +47,14 @@ RUN pip install --upgrade pip \
 # the in-image source. Bind-mounting the workspace at runtime then
 # transparently overlays user edits.
 COPY analytics_code /opt/analytics_code
-RUN pip install -e /opt/analytics_code
+RUN sed -i 's/\r$//' /opt/analytics_code/docker_entrypoint.sh \
+ && chmod +x /opt/analytics_code/docker_entrypoint.sh \
+ && pip install -e /opt/analytics_code
 
-# Default entrypoint runs both patient-level and document-level passes
-# against the bundled dummy config. Override with any other arguments
-# (e.g. ``--config /workspace/analytics_code/configs/my_config.json``)
-# at ``docker run`` time.
+# Default entrypoint runs the same default suite as the native wrapper:
+# patient-level, document-level, complete-marker sensitivity, and
+# validation-view endpoint passes against the bundled dummy config.
+# Override with any other arguments (e.g. ``--config
+# /workspace/analytics_code/configs/my_config.json``) at ``docker run`` time.
 ENTRYPOINT ["/opt/analytics_code/docker_entrypoint.sh"]
 CMD []
