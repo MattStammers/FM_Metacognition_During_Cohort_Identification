@@ -13,6 +13,8 @@ rem   * document-level complete-marker arm   -- run-document-level-complete-all
 rem        writes to <output_root>_document_level_complete
 rem        (sensitivity variant: restricts to rows whose relevant
 rem        document markers are all present)
+rem   * validation-view endpoint runs        -- run-validation-views-all
+rem        writes to <output_root>\{Document,Cumulative,Final,Doc2Patient}
 rem
 rem Usage:
 rem   scripts\run_analytics_pipeline.bat                        (uses bundled dummy config)
@@ -93,6 +95,9 @@ if errorlevel 1 goto :run_failed
 "%PYTHON_BIN%" -m analytics_code run-document-level-complete-all --config "%EFFECTIVE_CONFIG_PATH%"
 if errorlevel 1 goto :run_failed
 
+"%PYTHON_BIN%" -m analytics_code run-validation-views-all --config "%EFFECTIVE_CONFIG_PATH%"
+if errorlevel 1 goto :run_failed
+
 popd >nul
 
 echo.
@@ -100,6 +105,7 @@ echo [analytics] Pipeline completed.
 echo [analytics] Patient-level outputs:                    ^<output_root^>
 echo [analytics] Document-level outputs:                   ^<output_root^>_document_level
 echo [analytics] Document-level (complete-marker) outputs: ^<output_root^>_document_level_complete
+echo [analytics] Validation-view outputs:                  ^<output_root^>\{Document,Cumulative,Final,Doc2Patient^}
 call :cleanup_temp_config
 call :release_short_root
 exit /b 0

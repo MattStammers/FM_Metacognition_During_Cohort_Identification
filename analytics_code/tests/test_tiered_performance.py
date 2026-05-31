@@ -145,14 +145,60 @@ def test_document_tier_scores_against_single_marker() -> None:
 
 def test_cumulative_tier_uses_or_over_shown_docs() -> None:
     frame = _attach_document_sequence_truth_columns(_build_frame())
-    base = _prepare_base(frame, flag_columns=_resolve_flag_columns(_dummy_config()))
+    flag_columns = _resolve_flag_columns(_dummy_config())
+    base = _prepare_base(frame, flag_columns=flag_columns)
     overall, per_dt = _cumulative_tier(
-        base, policy=ALL_ATTEMPTS, n_boot=20, seed=1, patient_col="patient_id"
+        base,
+        policy=ALL_ATTEMPTS,
+        n_boot=20,
+        seed=1,
+        patient_col="patient_id",
+        flag_columns=flag_columns,
     )
     assert len(overall) == 1
     # endo_hist truth for P1 = OR(endo=0, hist=1) = 1; pred=1 -> correct.
     edhist = per_dt[per_dt["report_sequence_name"] == "endo_hist"]
     assert not edhist.empty
+
+
+def test_cumulative_tier_uses_document_rows_not_direct_multi_doc_scores() -> None:
+    frame = pd.DataFrame(
+        {
+            "patient_id": ["P1", "P1", "P1", "P2", "P2", "P2"],
+            "model_canon": ["mixtral7b"] * 6,
+            "shot_type": ["zero"] * 6,
+            "temperature": [0.75] * 6,
+            "report_sequence_name": [
+                "hist",
+                "endo",
+                "endo_hist",
+                "hist",
+                "endo",
+                "endo_hist",
+            ],
+            "likelihood_score": [8, 3, 0, 2, 1, 10],
+            "histology_ibd_flag": [1, 1, 1, 0, 0, 0],
+            "endoscopy_ibd_flag": [0, 0, 0, 0, 0, 0],
+            "preceding_clinic_ibd_flag": [0, 0, 0, 0, 0, 0],
+            "following_clinic_ibd_flag": [0, 0, 0, 0, 0, 0],
+            "Patient_Has_IBD": [1, 1, 1, 0, 0, 0],
+        }
+    )
+    frame = _attach_document_sequence_truth_columns(frame)
+    flag_columns = _resolve_flag_columns(_dummy_config())
+    base = _prepare_base(frame, flag_columns=flag_columns)
+
+    _, per_dt = _cumulative_tier(
+        base,
+        policy=ALL_ATTEMPTS,
+        n_boot=20,
+        seed=1,
+        patient_col="patient_id",
+        flag_columns=flag_columns,
+    )
+
+    edhist = per_dt[per_dt["report_sequence_name"] == "endo_hist"].iloc[0]
+    assert edhist["Accuracy"] == pytest.approx(1.0)
 
 
 def test_final_tier_aggregates_one_row_per_patient_group() -> None:

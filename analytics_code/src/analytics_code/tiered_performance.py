@@ -10,14 +10,15 @@ handling and outcome-centering logic:
   prediction is the model row likelihood ``>= 5``, reference is the
   corresponding physician marker.
 * ``Cumulative_*`` -- one row per multi-doc data type (the linked
-  document bundle); prediction is the model row likelihood ``>= 5``,
-  reference is the logical OR of the physician markers for the docs
-  shown in that data_type (see :data:`DATA_TYPE_DOCUMENT_SET`).
+    document bundle); prediction is rebuilt from the component
+    single-document likelihoods using a max/OR-style collapse,
+    reference is the logical OR of the physician markers for the docs
+    shown in that data_type (see :data:`DATA_TYPE_DOCUMENT_SET`).
 * ``Final_*`` -- one row per ``(study_id, model_canon, shot_type,
-  temperature)``; prediction is the logical OR of every per-row
-  prediction for that group, reference is the logical OR over all
-  four physician markers for that patient
-  (:data:`PATIENT_DOCUMENT_TRUTH`).
+    temperature)``; prediction is rebuilt from document-level rows and
+    then collapsed to patient level, reference is the logical OR over
+    all four physician markers for that patient
+    (:data:`PATIENT_DOCUMENT_TRUTH`).
 * ``Doc2Patient`` -- same unit and prediction as ``Final_*`` but
   reference is the **chart-verified** patient label
   (``Patient_Has_IBD`` / ``ground_truth``). Secondary endpoint.
@@ -60,7 +61,11 @@ from analytics_code.common import (
     write_dataframe,
 )
 from analytics_code.config import AnalysisConfig
-from analytics_code.data_prep import PATIENT_DOCUMENT_TRUTH
+from analytics_code.data_prep import (
+    PATIENT_DOCUMENT_TRUTH,
+    _build_document_derived_cumulative_view,
+    _document_component_rows,
+)
 from analytics_code.full_performance import METRICS, _bootstrap_metrics, _point_metrics
 from analytics_code.predictions import (
     DECISION_THRESHOLD,
@@ -288,8 +293,11 @@ def _cumulative_tier(
     n_boot: int,
     seed: int,
     patient_col: str | None,
+    flag_columns: dict[str, str],
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    rows = base[base["_tier"] == "cumulative"].copy()
+    cumulative_view = _build_document_derived_cumulative_view(base)
+    rows = _prepare_base(cumulative_view, flag_columns=flag_columns)
+    rows = rows[rows["_tier"] == "cumulative"].copy()
     rows["_pred"] = _row_prediction(rows["_bucket"], policy=policy)
     rows["_p"] = _row_probability(rows["_bucket"], policy=policy)
     rows = rows.dropna(subset=["_cum_truth"])
@@ -325,24 +333,24 @@ def _aggregate_patient_predictions(
 ) -> pd.DataFrame:
     """Collapse rows to one prediction per ``(patient, model, shot, temp)``.
 
-    For every group, the Final prediction is the logical OR of the
-    per-row binary predictions. Under ``all_attempts`` a missing
-    likelihood counts as a 0 vote (and still participates in the OR).
-    Under ``complete_case`` rows with missing likelihoods are dropped
-    before the OR; if every row for a patient is dropped, that patient
-    is omitted from the group.
+    The patient-level endpoint is rebuilt from document-level rows so
+    it follows the same end predictor-handling convention as the
+    validation-view path. Under ``all_attempts`` a missing likelihood
+    counts as a 0 vote; under ``complete_case`` rows with missing
+    likelihoods are dropped before aggregation.
     """
-    rows = base.copy()
-    rows["_pred"] = _row_prediction(rows["_bucket"], policy=policy)
+    rows = _document_component_rows(base)
+    if rows.empty:
+        rows = base.copy()
+        rows["_bucket"] = _row_bucket(rows)
     if policy == COMPLETE_CASE:
-        rows = rows.dropna(subset=["_pred"])
+        rows = rows.dropna(subset=["_bucket"])
     if rows.empty:
         return pd.DataFrame()
-    rows["_pred"] = rows["_pred"].astype(int)
     group_cols = [patient_col] + [c for c in GROUP_KEYS if c in rows.columns]
-    agg = rows.groupby(group_cols, dropna=False)["_pred"].max().reset_index()
-    agg = agg.rename(columns={"_pred": "_final_pred"})
-    agg["_p"] = agg["_final_pred"].astype(float)
+    agg = rows.groupby(group_cols, dropna=False)["_bucket"].max().reset_index()
+    agg["_final_pred"] = _row_prediction(agg["_bucket"], policy=policy).astype(int)
+    agg["_p"] = _row_probability(agg["_bucket"], policy=policy).astype(float)
     return agg
 
 
@@ -638,6 +646,7 @@ def run_tiered_performance(config: AnalysisConfig) -> dict[str, Path]:
                 n_boot=n_boot,
                 seed=seed,
                 patient_col=patient_col,
+                flag_columns=flag_columns,
             )
         )
         outputs.update(
@@ -718,9 +727,15 @@ def _emit_cumulative(
     n_boot: int,
     seed: int,
     patient_col: str,
+    flag_columns: dict[str, str],
 ) -> dict[str, Path]:
     overall, per_dt = _cumulative_tier(
-        base, policy=policy, n_boot=n_boot, seed=seed, patient_col=patient_col
+        base,
+        policy=policy,
+        n_boot=n_boot,
+        seed=seed,
+        patient_col=patient_col,
+        flag_columns=flag_columns,
     )
     out_dir = ensure_dir(tier_dir / policy)
     written: dict[str, Path] = {}
